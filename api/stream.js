@@ -1,6 +1,6 @@
 // File: api/stream.js
-// GET /api/stream?id=4673 -> Stream trực tiếp video dung lượng lớn (Hỗ trợ Cross-DC)
-const { TelegramClient, Api } = require("telegram");
+// GET /api/stream?id=4673 -> Stream trực tiếp video lớn qua MTProto
+const { TelegramClient } = require("telegram");
 const { StringSession } = require("telegram/sessions");
 
 let bigInt;
@@ -18,16 +18,12 @@ const SESSION_STR = (
   "1BQANOTEuMTA4LjU2LjE4NgG7XBr/db36p5RLigAzRdLxaLh3PWBOyvFIGDGr/nxEp8Hyo0Bs1wMvpdmOVYn1D6Dg6VTShd6VMpy34KL4GJWiGeqHr0+tTtHux4gWxPAHsbKTR23wRhLTm0A9j6CftexKZJUQHtrD4q87SpqXrlwRXBeLKu04zcxcQC7LdNDrPsHCiVZuEs/BpAqyLuRhcEbu5ekK+4rmMI3u74jmRm1/vSMpGng+Fn1OrNKROu8PNq6kcKIGfYPr6d4l1R1BDs2ymVkH11pA1mCUjd4XspNcrD1KnL2BSoixD8tI5WXS8KiHPeeNGsq8mWjQaJzdu3UFXcJ4BKIt/qMVZj5ugv4zEQ=="
 ).trim();
 
-// 512 KB là kích thước chuẩn tối đa của 1 lệnh upload.GetFile trong MTProto
-const BLOCK_SIZE = 512 * 1024;
+// Mỗi part chuẩn của MTProto là 512 KB (ước số của 1 MB nên không bao giờ lệch biên 1 MB)
+const PART_SIZE = 512 * 1024;
 
 globalThis.__tgMediaCache = globalThis.__tgMediaCache || new Map();
-globalThis.__tgDcSenders = globalThis.__tgDcSenders || new Map();
 
 async function getClient() {
-  if (globalThis.__tgClient && globalThis.__tgClient.connected) {
-    return globalThis.__tgClient;
-  }
   if (!globalThis.__tgClientPromise) {
     globalThis.__tgClientPromise = (async () => {
       const client = new TelegramClient(new StringSession(SESSION_STR), API_ID, API_HASH, {
@@ -35,109 +31,17 @@ async function getClient() {
         useWSS: false,
       });
       await client.connect();
-      globalThis.__tgClient = client;
       return client;
     })().catch((err) => {
       globalThis.__tgClientPromise = null;
-      globalThis.__tgClient = null;
       throw err;
     });
   }
-  return globalThis.__tgClientPromise;
-}
-
-// Khởi tạo và xác thực kết nối tới cụm máy chủ (DC) chứa video
-async function getAuthorizedSender(client, dcId, forceReset = false) {
-  if (dcId === client.session.dcId) {
-    return client._sender;
+  const client = await globalThis.__tgClientPromise;
+  if (!client.connected) {
+    await client.connect();
   }
-  if (forceReset) {
-    globalThis.__tgDcSenders.delete(dcId);
-  }
-  if (!globalThis.__tgDcSenders.has(dcId)) {
-    const promise = (async () => {
-      const sender = await client.getSender(dcId);
-      if (!sender.isConnected()) {
-        await sender.connect();
-      }
-      try {
-        const exported = await client.invoke(new Api.auth.ExportAuthorization({ dcId }));
-        await sender.send(
-          client._initWith(
-            new Api.auth.ImportAuthorization({
-              id: exported.id,
-              bytes: exported.bytes,
-            })
-          )
-        );
-      } catch (e) {
-        // Nếu sender đã được import auth từ trước thì chỉ cần đảm bảo InitConnection
-        const msg = String(e.errorMessage || e.message || "");
-        if (!msg.includes("AUTH_KEY_DUPLICATED")) {
-          try {
-            await sender.send(client._initWith(new Api.help.GetConfig()));
-          } catch (_) {}
-        }
-      }
-      return sender;
-    })().catch((err) => {
-      globalThis.__tgDcSenders.delete(dcId);
-      throw err;
-    });
-
-    globalThis.__tgDcSenders.set(dcId, promise);
-  }
-  return globalThis.__tgDcSenders.get(dcId);
-}
-
-// Tải 1 khối 512 KB từ đúng DC chứa file
-async function downloadBlock(client, info, alignedOffset) {
-  const location = new Api.InputDocumentFileLocation({
-    id: info.id,
-    accessHash: info.accessHash,
-    fileReference: info.fileReference,
-    thumbSize: "",
-  });
-
-  const req = new Api.upload.GetFile({
-    location,
-    offset: bigInt(alignedOffset),
-    limit: BLOCK_SIZE,
-  });
-
-  if (info.dcId === client.session.dcId) {
-    const res = await client.invoke(req);
-    return Buffer.from(res.bytes);
-  }
-
-  let sender = await getAuthorizedSender(client, info.dcId);
-  try {
-    const res = await sender.send(req);
-    return Buffer.from(res.bytes);
-  } catch (err) {
-    const errMsg = String(err.errorMessage || err.message || "");
-
-    if (errMsg.includes("CONNECTION_NOT_INITED")) {
-      const res = await sender.send(client._initWith(req));
-      return Buffer.from(res.bytes);
-    }
-
-    if (errMsg.includes("AUTH_KEY_UNREGISTERED") || errMsg.includes("USER_MIGRATE")) {
-      sender = await getAuthorizedSender(client, info.dcId, true);
-      const res = await sender.send(client._initWith(req));
-      return Buffer.from(res.bytes);
-    }
-
-    const migrateMatch = errMsg.match(/FILE_MIGRATE_(\d+)/);
-    if (migrateMatch) {
-      info.dcId = Number(migrateMatch[1]);
-      sender = await getAuthorizedSender(client, info.dcId);
-      const res = await sender.send(client._initWith(req));
-      return Buffer.from(res.bytes);
-    }
-
-    throw err;
-  }
+  return client;
 }
 
 async function getMediaInfo(client, msgId, forceRefresh = false) {
@@ -152,16 +56,27 @@ async function getMediaInfo(client, msgId, forceRefresh = false) {
   if (!doc) return null;
 
   const info = {
-    id: doc.id,
-    accessHash: doc.accessHash,
-    fileReference: doc.fileReference,
-    dcId: doc.dcId,
+    media: msg.media,
     size: Number(doc.size),
     mimeType: doc.mimeType || "video/mp4",
     time: Date.now(),
   };
   globalThis.__tgMediaCache.set(msgId, info);
   return info;
+}
+
+async function fetchParts(client, media, alignedStart, partsCount) {
+  const chunks = [];
+  // Không dùng break trong vòng lặp để GramJS tự động giải phóng kết nối DC khi đủ limit
+  for await (const chunk of client.iterDownload({
+    file: media,
+    offset: bigInt(alignedStart),
+    requestSize: PART_SIZE,
+    limit: partsCount,
+  })) {
+    chunks.push(Buffer.from(chunk));
+  }
+  return Buffer.concat(chunks);
 }
 
 module.exports = async (req, res) => {
@@ -171,7 +86,7 @@ module.exports = async (req, res) => {
   try {
     const client = await getClient();
     let info = await getMediaInfo(client, msgId);
-    if (!info) return res.status(404).json({ error: "Không tìm thấy video trong bài giảng này" });
+    if (!info) return res.status(404).json({ error: "Không tìm thấy video" });
 
     const fileSize = info.size;
 
@@ -203,38 +118,34 @@ module.exports = async (req, res) => {
       return res.end();
     }
 
-    const alignedStart = Math.floor(reqStart / BLOCK_SIZE) * BLOCK_SIZE;
+    const alignedStart = Math.floor(reqStart / PART_SIZE) * PART_SIZE;
+    const skipBytes = reqStart - alignedStart;
 
-    let rawChunk;
+    // Nếu điểm đọc nằm ở cuối khối 512 KB thì tải luôn 2 khối (1 MB) để không bị hụt dữ liệu
+    const needTwoParts =
+      PART_SIZE - skipBytes < 128 * 1024 && alignedStart + PART_SIZE < fileSize;
+    const partsCount = needTwoParts ? 2 : 1;
+
+    let rawBuffer;
     try {
-      rawChunk = await downloadBlock(client, info, alignedStart);
+      rawBuffer = await fetchParts(client, info.media, alignedStart, partsCount);
     } catch (err) {
-      // Nếu file_reference hết hạn, làm mới lại thông tin tin nhắn và tải lại
       if (String(err.errorMessage || err.message || "").includes("FILE_REFERENCE")) {
         info = await getMediaInfo(client, msgId, true);
-        rawChunk = await downloadBlock(client, info, alignedStart);
+        rawBuffer = await fetchParts(client, info.media, alignedStart, partsCount);
       } else {
         throw err;
       }
     }
 
-    // Nếu điểm bắt đầu nằm ở cuối khối 512 KB, tải nối thêm khối tiếp theo để trình duyệt không bị hụt dữ liệu
-    const skipBytes = reqStart - alignedStart;
-    if (
-      rawChunk.length - skipBytes < 128 * 1024 &&
-      alignedStart + BLOCK_SIZE < fileSize &&
-      (!hasExplicitEnd || explicitEnd > alignedStart + BLOCK_SIZE - 1)
-    ) {
-      try {
-        const nextChunk = await downloadBlock(client, info, alignedStart + BLOCK_SIZE);
-        rawChunk = Buffer.concat([rawChunk, nextChunk]);
-      } catch (_) {}
+    if (!rawBuffer.length) {
+      throw new Error("Không nhận được dữ liệu từ Telegram");
     }
 
-    const maxAvailableEnd = alignedStart + rawChunk.length - 1;
+    const maxAvailableEnd = alignedStart + rawBuffer.length - 1;
     const reqEnd = hasExplicitEnd ? Math.min(explicitEnd, maxAvailableEnd) : maxAvailableEnd;
     const takeBytes = Math.max(0, reqEnd - reqStart + 1);
-    const slice = rawChunk.subarray(skipBytes, skipBytes + takeBytes);
+    const slice = rawBuffer.subarray(skipBytes, skipBytes + takeBytes);
     const actualEnd = reqStart + slice.length - 1;
 
     res.writeHead(206, {
