@@ -117,7 +117,7 @@
     .status-badge {
       display: inline-block;
       margin-top: 10px;
-      font-size: 12px;
+      font-size: 13px;
       color: #8faea6;
     }
   </style>
@@ -151,15 +151,17 @@
       loadMoreBtn.disabled = true;
       loadMoreBtn.textContent = "Đang tải...";
       try {
-        const res = await fetch(`/api/lectures${before ? `?before=${before}` : ""}`);
+        const res = await fetch("/api/lectures" + (before ? "?before=" + before : ""));
         const data = await res.json();
-        if (data.error) throw new Error(data.error);
+        if (!res.ok || data.error) {
+          throw new Error(data.error || "HTTP " + res.status);
+        }
 
         channelName = data.channel || channelName;
         nextBefore = data.next;
 
         const existingIds = new Set(allItems.map((i) => i.id));
-        for (const item of data.items) {
+        for (const item of data.items || []) {
           if (!existingIds.has(item.id)) allItems.push(item);
         }
 
@@ -171,7 +173,9 @@
           selectLecture(found.id);
         }
       } catch (err) {
-        mainEl.innerHTML = `<p style="color:#ff7b7b">Lỗi tải danh sách: ${err.message}</p>`;
+        mainEl.innerHTML =
+          '<h1 style="color:#ff7b7b">Lỗi tải danh sách bài giảng</h1>' +
+          '<p style="margin-top:10px;color:#ffb3b3">' + escapeHtml(err.message) + "</p>";
       } finally {
         loadMoreBtn.disabled = !nextBefore;
         loadMoreBtn.textContent = nextBefore ? "Tải thêm bài cũ" : "Đã hết bài";
@@ -188,12 +192,12 @@
         .map((item) => {
           const dateStr = item.date ? item.date.slice(0, 10) : "";
           const activeClass = item.id === currentId ? "active" : "";
-          return `
-            <div class="lecture-item ${activeClass}" onclick="selectLecture(${item.id})">
-              <div class="lecture-title">${escapeHtml(item.title)}</div>
-              <div class="lecture-meta">${item.duration} ${dateStr}</div>
-            </div>
-          `;
+          return (
+            '<div class="lecture-item ' + activeClass + '" onclick="selectLecture(' + item.id + ')">' +
+              '<div class="lecture-title">' + escapeHtml(item.title) + "</div>" +
+              '<div class="lecture-meta">' + escapeHtml(item.duration) + " " + escapeHtml(dateStr) + "</div>" +
+            "</div>"
+          );
         })
         .join("");
     }
@@ -203,62 +207,55 @@
       if (!item) return;
 
       currentId = id;
-      location.hash = `#${id}`;
+      location.hash = "#" + id;
       renderList();
 
-      const initialSrc = item.directUrl || item.streamUrl;
+      const streamUrl = item.streamUrl || ("/api/stream?id=" + item.id);
+      const initialSrc = item.directUrl || streamUrl;
       const modeText = item.directUrl
         ? "Đang phát trực tiếp qua Telegram CDN"
-        : "Đang phát qua MTProto Stream (hỗ trợ video dung lượng lớn)";
+        : "Đang kết nối luồng MTProto Stream (video dung lượng lớn, chờ 2-4 giây)...";
 
-      mainEl.innerHTML = `
-        <h1>${escapeHtml(item.title)}</h1>
-        <div class="player-wrapper">
-          <video
-            id="videoPlayer"
-            src="${initialSrc}"
-            poster="${item.thumb || ""}"
-            controls
-            autoplay
-            playsinline
-            referrerpolicy="no-referrer"
-          ></video>
-        </div>
-        <div class="status-badge" id="streamStatus">${modeText}</div>
-        ${item.text ? `<div class="lecture-desc">${escapeHtml(item.text)}</div>` : ""}
-        <div>
-          <a class="tg-link" href="https://t.me/${channelName}/${item.id}" target="_blank" rel="noopener">
-            Mở trong Telegram
-          </a>
-        </div>
-      `;
+      mainEl.innerHTML =
+        "<h1>" + escapeHtml(item.title) + "</h1>" +
+        '<div class="player-wrapper">' +
+          '<video id="videoPlayer" src="' + initialSrc + '" poster="' + (item.thumb || "") + '" controls autoplay playsinline referrerpolicy="no-referrer"></video>' +
+        "</div>" +
+        '<div class="status-badge" id="streamStatus">' + modeText + "</div>" +
+        (item.text ? '<div class="lecture-desc">' + escapeHtml(item.text) + "</div>" : "") +
+        '<div><a class="tg-link" href="https://t.me/' + channelName + "/" + item.id + '" target="_blank" rel="noopener">Mở trong Telegram</a></div>';
 
-     const videoEl = document.getElementById("videoPlayer");
+      const videoEl = document.getElementById("videoPlayer");
       const statusEl = document.getElementById("streamStatus");
+
+      videoEl.onloadeddata = () => {
+        statusEl.style.color = "#6be6a8";
+        statusEl.textContent = "Đang phát bài giảng #" + item.id;
+      };
 
       videoEl.onerror = async () => {
         if (!videoEl.src.includes("/api/stream")) {
           statusEl.textContent = "Đang chuyển sang luồng MTProto Stream...";
-          videoEl.src = item.streamUrl;
+          videoEl.src = streamUrl;
           videoEl.play().catch(() => {});
           return;
         }
         try {
-          const r = await fetch(item.streamUrl, { headers: { Range: "bytes=0-1023" } });
+          const r = await fetch(streamUrl, { headers: { Range: "bytes=0-1023" } });
           if (!r.ok) {
             const errData = await r.json().catch(() => ({}));
             statusEl.style.color = "#ff7b7b";
-            statusEl.textContent = "Lỗi Stream: " + (errData.error || `HTTP ${r.status}`);
+            statusEl.textContent = "Lỗi Stream: " + (errData.error || "HTTP " + r.status);
           }
         } catch (err) {
           statusEl.style.color = "#ff7b7b";
           statusEl.textContent = "Lỗi kết nối Stream: " + err.message;
         }
       };
-    
+    }
 
     function escapeHtml(s) {
-      return String(s)
+      return String(s || "")
         .replace(/&/g, "&amp;")
         .replace(/</g, "&lt;")
         .replace(/>/g, "&gt;")
