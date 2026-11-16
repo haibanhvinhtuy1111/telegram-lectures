@@ -1,5 +1,6 @@
-// GET /api/lectures           -> bài mới nhất
-// GET /api/lectures?before=ID -> các bài cũ hơn ID
+// File: api/lectures.js
+// GET /api/lectures                  -> Lấy đợt bài mới nhất (gom 5 trang/lần)
+// GET /api/lectures?before=ID        -> Lấy tiếp các đợt bài cũ hơn ID
 const CHANNEL = process.env.TG_CHANNEL || "spankbanggggg";
 
 const decode = (s) =>
@@ -13,50 +14,83 @@ const decode = (s) =>
     .replace(/&gt;/g, ">")
     .replace(/&amp;/g, "&");
 
+function parsePage(html) {
+  const blocks = html.split("tgme_widget_message_wrap").slice(1);
+  const idOf = (b) => Number((b.match(/data-post="[^"\/]+\/(\d+)"/) || [])[1]);
+  const allIds = blocks.map(idOf).filter(Boolean);
+
+  const pageItems = [];
+  for (const b of blocks) {
+    const id = idOf(b);
+    if (!id || !b.includes("tgme_widget_message_video")) continue;
+
+    const directUrl = (b.match(/<video[^>]+src="([^"]+)"/) || [])[1] || null;
+    const thumb =
+      (b.match(/tgme_widget_message_video_thumb[^>]+background-image:url\('([^']+)'\)/) || [])[1] ||
+      null;
+
+    const raw =
+      (b.match(/class="tgme_widget_message_text js-message_text[^"]*"[^>]*>([\s\S]*?)<\/div>/) ||
+        [])[1] || "";
+    const text = decode(raw.replace(/<br\s*\/?>/g, "\n").replace(/<[^>]+>/g, "")).trim();
+
+    pageItems.push({
+      id,
+      title: text.split("\n")[0].slice(0, 120) || `Bài giảng ${id}`,
+      text,
+      duration: (b.match(/message_video_duration[^>]*>([^<]+)</) || [])[1] || "",
+      date: (b.match(/<time[^>]*datetime="([^"]+)"/) || [])[1] || "",
+      directUrl,
+      streamUrl: `/api/stream?id=${id}`,
+      thumb,
+    });
+  }
+
+  pageItems.reverse(); // Mới nhất lên đầu
+  const minId = allIds.length ? Math.min(...allIds) : 0;
+  return { pageItems, minId };
+}
+
 module.exports = async (req, res) => {
-  const before = Number(req.query.before) || 0;
-  const url = `https://t.me/s/${CHANNEL}` + (before ? `?before=${before}` : "");
+  let cursor = Number(req.query.before) || 0;
+  // Mặc định gom 5 trang mỗi request để tải toàn bộ kênh nhanh gấp 5 lần
+  const pagesToFetch = Math.min(Math.max(Number(req.query.pages) || 5, 1), 8);
+
+  const seenIds = new Set();
+  const items = [];
 
   try {
-    const r = await fetch(url, { headers: { "user-agent": "Mozilla/5.0" } });
-    if (!r.ok) throw new Error(`Telegram trả về ${r.status}`);
-    const html = await r.text();
+    for (let i = 0; i < pagesToFetch; i++) {
+      const url = `https://t.me/s/${CHANNEL}` + (cursor ? `?before=${cursor}` : "");
+      const r = await fetch(url, { headers: { "user-agent": "Mozilla/5.0" } });
+      if (!r.ok) {
+        if (items.length > 0) break;
+        throw new Error(`Telegram trả về ${r.status}`);
+      }
 
-    const blocks = html.split("tgme_widget_message_wrap").slice(1);
-    const idOf = (b) => Number((b.match(/data-post="[^"\/]+\/(\d+)"/) || [])[1]);
-    const allIds = blocks.map(idOf).filter(Boolean);
+      const html = await r.text();
+      const { pageItems, minId } = parsePage(html);
 
-    const items = [];
-    for (const b of blocks) {
-      const id = idOf(b);
-      if (!id || !b.includes("tgme_widget_message_video")) continue;
+      for (const item of pageItems) {
+        if (!seenIds.has(item.id)) {
+          seenIds.add(item.id);
+          items.push(item);
+        }
+      }
 
-      const directUrl = (b.match(/<video[^>]+src="([^"]+)"/) || [])[1] || null;
-      const thumb =
-        (b.match(/tgme_widget_message_video_thumb[^>]+background-image:url\('([^']+)'\)/) || [])[1] ||
-        null;
-
-      const raw =
-        (b.match(/class="tgme_widget_message_text js-message_text[^"]*"[^>]*>([\s\S]*?)<\/div>/) ||
-          [])[1] || "";
-      const text = decode(raw.replace(/<br\s*\/?>/g, "\n").replace(/<[^>]+>/g, "")).trim();
-
-      items.push({
-        id,
-        title: text.split("\n")[0].slice(0, 120) || `Bài giảng ${id}`,
-        text,
-        duration: (b.match(/message_video_duration[^>]*>([^<]+)</) || [])[1] || "",
-        date: (b.match(/<time[^>]*datetime="([^"]+)"/) || [])[1] || "",
-        directUrl,
-        streamUrl: `/api/stream?id=${id}`,
-        thumb,
-      });
+      if (!minId || minId <= 1 || (cursor && minId >= cursor)) {
+        cursor = 0;
+        break;
+      }
+      cursor = minId;
     }
-    items.reverse();
 
-    const min = allIds.length ? Math.min(...allIds) : 0;
     res.setHeader("Cache-Control", "s-maxage=300, stale-while-revalidate=600");
-    res.status(200).json({ channel: CHANNEL, items, next: min > 1 ? min : null });
+    res.status(200).json({
+      channel: CHANNEL,
+      items,
+      next: cursor > 1 ? cursor : null,
+    });
   } catch (e) {
     res.status(502).json({ error: String(e.message || e) });
   }
