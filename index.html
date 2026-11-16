@@ -233,16 +233,29 @@
         </div>
       `;
 
-      const videoEl = document.getElementById("videoPlayer");
-      videoEl.onerror = () => {
-        if (videoEl.src !== location.origin + item.streamUrl) {
-          document.getElementById("streamStatus").textContent =
-            "Đang chuyển sang luồng MTProto Stream...";
+     const videoEl = document.getElementById("videoPlayer");
+      const statusEl = document.getElementById("streamStatus");
+
+      videoEl.onerror = async () => {
+        if (!videoEl.src.includes("/api/stream")) {
+          statusEl.textContent = "Đang chuyển sang luồng MTProto Stream...";
           videoEl.src = item.streamUrl;
           videoEl.play().catch(() => {});
+          return;
+        }
+        try {
+          const r = await fetch(item.streamUrl, { headers: { Range: "bytes=0-1023" } });
+          if (!r.ok) {
+            const errData = await r.json().catch(() => ({}));
+            statusEl.style.color = "#ff7b7b";
+            statusEl.textContent = "Lỗi Stream: " + (errData.error || `HTTP ${r.status}`);
+          }
+        } catch (err) {
+          statusEl.style.color = "#ff7b7b";
+          statusEl.textContent = "Lỗi kết nối Stream: " + err.message;
         }
       };
-    }
+    
 
     function escapeHtml(s) {
       return String(s)
