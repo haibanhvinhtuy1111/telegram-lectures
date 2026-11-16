@@ -14,7 +14,6 @@
       height: 100vh;
       overflow: hidden;
     }
-    /* Sidebar */
     .sidebar {
       width: 260px;
       background: #12221f;
@@ -79,7 +78,6 @@
     .load-more-btn:hover { background: #223d37; }
     .load-more-btn:disabled { opacity: 0.5; cursor: not-allowed; }
 
-    /* Main Content */
     .main {
       flex: 1;
       padding: 28px 36px;
@@ -208,7 +206,6 @@
       location.hash = `#${id}`;
       renderList();
 
-      // Ưu tiên link CDN trực tiếp nếu có, nếu video lớn (Media is too big) thì phát qua /api/stream
       const initialSrc = item.directUrl || item.streamUrl;
       const modeText = item.directUrl
         ? "Đang phát trực tiếp qua Telegram CDN"
@@ -236,7 +233,6 @@
         </div>
       `;
 
-      // Nếu link CDN trực tiếp gặp lỗi, tự động chuyển sang /api/stream
       const videoEl = document.getElementById("videoPlayer");
       videoEl.onerror = () => {
         if (videoEl.src !== location.origin + item.streamUrl) {
