@@ -1,0 +1,106 @@
+<!doctype html>
+<html lang="vi">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Thư viện bài giảng</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Be+Vietnam+Pro:wght@400;600;800&display=swap" rel="stylesheet">
+<style>
+  :root {
+    --board: #1f3a34; --board-2: #172c27; --chalk: #eef1ea; --dim: #a9bbb2; --yellow: #f2c94c;
+  }
+  * { box-sizing: border-box; }
+  body { margin: 0; background: var(--board-2); color: var(--chalk);
+         font: 400 16px/1.55 "Be Vietnam Pro", system-ui, sans-serif; }
+  .app { display: grid; grid-template-columns: 340px 1fr; min-height: 100vh; }
+  aside { background: var(--board); border-right: 2px solid var(--chalk); display: flex;
+          flex-direction: column; max-height: 100vh; position: sticky; top: 0; }
+  aside h1 { font-size: 1.25rem; font-weight: 800; margin: 0; padding: 20px 20px 8px; }
+  #q { margin: 8px 20px 12px; padding: 10px 12px; border: 1px solid var(--dim); border-radius: 4px;
+       background: transparent; color: var(--chalk); font: inherit; }
+  #q:focus-visible, button:focus-visible, a:focus-visible { outline: 2px solid var(--yellow); outline-offset: 2px; }
+  #list { overflow-y: auto; flex: 1; }
+  .item { display: block; width: 100%; text-align: left; padding: 12px 20px; border: 0;
+          border-left: 4px solid transparent; background: none; color: inherit; font: inherit; cursor: pointer; }
+  .item:hover { background: rgba(255,255,255,.06); }
+  .item.on { border-left-color: var(--yellow); background: rgba(255,255,255,.1); }
+  .item strong { display: block; font-weight: 600; }
+  .item span { color: var(--dim); font-size: .85rem; }
+  #more { margin: 12px 20px 20px; padding: 10px; border: 1px solid var(--chalk); border-radius: 4px;
+          background: none; color: var(--chalk); font: inherit; cursor: pointer; }
+  main { padding: 28px clamp(16px, 4vw, 48px); max-width: 880px; }
+  main h2 { font-size: clamp(1.5rem, 3vw, 2.2rem); font-weight: 800; line-height: 1.2; margin: 0 0 16px; }
+  iframe { width: 100%; height: min(75vh, 640px); border: 0; border-radius: 6px; background: #fff; }
+  #desc { white-space: pre-line; color: var(--dim); max-width: 70ch; }
+  #open { color: var(--yellow); }
+  @media (max-width: 800px) {
+    .app { grid-template-columns: 1fr; }
+    aside { position: static; max-height: 50vh; order: 2; border-right: 0; border-top: 2px solid var(--chalk); }
+  }
+</style>
+</head>
+<body>
+<div class="app">
+  <aside>
+    <h1>Bài giảng</h1>
+    <input id="q" type="search" placeholder="Tìm bài giảng" aria-label="Tìm bài giảng">
+    <div id="list">Đang tải...</div>
+    <button id="more" hidden>Tải thêm bài cũ</button>
+  </aside>
+  <main>
+    <h2 id="title">Chọn một bài giảng</h2>
+    <iframe id="frame" title="Video bài giảng" allowfullscreen></iframe>
+    <p id="desc"></p>
+    <a id="open" target="_blank" rel="noopener">Mở trong Telegram</a>
+  </main>
+</div>
+<script>
+const $ = (s) => document.querySelector(s);
+let channel = "", items = [], next = null, current = null;
+
+async function load(before) {
+  const r = await fetch("/api/lectures" + (before ? "?before=" + before : ""));
+  if (!r.ok) { $("#list").textContent = "Không tải được danh sách. Hãy thử lại sau."; return; }
+  const d = await r.json();
+  channel = d.channel; items.push(...d.items); next = d.next;
+  $("#more").hidden = !next;
+  if (!items.length && next) return load(next);   // trang này không có video, đọc tiếp
+  render();
+  if (!current) play(Number(location.hash.slice(1)) || (items[0] && items[0].id));
+}
+
+function render() {
+  const q = $("#q").value.trim().toLowerCase();
+  const list = $("#list");
+  list.replaceChildren();
+  const shown = items.filter((i) => (i.title + i.text).toLowerCase().includes(q));
+  if (!shown.length) list.textContent = "Không có bài giảng nào khớp.";
+  for (const it of shown) {
+    const b = document.createElement("button");
+    b.className = "item" + (it.id === current ? " on" : "");
+    const t = document.createElement("strong"); t.textContent = it.title;
+    const m = document.createElement("span"); m.textContent = [it.duration, it.date.slice(0, 10)].filter(Boolean).join("   ");
+    b.append(t, m);
+    b.onclick = () => play(it.id);
+    list.append(b);
+  }
+}
+
+function play(id) {
+  const it = items.find((i) => i.id === id);
+  if (!it) return;
+  current = id; location.hash = id;
+  $("#frame").src = `https://t.me/${channel}/${id}?embed=1&mode=tme`;
+  $("#title").textContent = it.title;
+  $("#desc").textContent = it.text;
+  $("#open").href = `https://t.me/${channel}/${id}`;
+  render();
+}
+
+$("#q").oninput = render;
+$("#more").onclick = () => load(next);
+load();
+</script>
+</body>
+</html>
