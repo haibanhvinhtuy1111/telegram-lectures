@@ -1,24 +1,20 @@
-// GET /api/stream?id=4676 -> Stream trực tiếp video lớn từ Telegram
+// GET /api/stream?id=4676 -> Stream trực tiếp mọi video dung lượng lớn từ Telegram
 const { TelegramClient } = require("telegram");
 const { StringSession } = require("telegram/sessions");
 
 const CHANNEL = process.env.TG_CHANNEL || "spankbanggggg";
-const API_ID = Number(process.env.TG_API_ID);
-const API_HASH = process.env.TG_API_HASH;
-const SESSION_STR = process.env.TG_SESSION || "";
+const API_ID = Number(process.env.TG_API_ID) || 31512968;
+const API_HASH = process.env.TG_API_HASH || "562553a691db637e77ca86da3bf948bd";
+const SESSION_STR =
+  process.env.TG_SESSION ||
+  "1BQANOTEuMTA4LjU2LjE4NgG7XBr/db36p5RLigAzRdLxaLh3PWBOyvFIGDGr/nxEp8Hyo0Bs1wMvpdmOVYn1D6Dg6VTShd6VMpy34KL4GJWiGeqHr0+tTtHux4gWxPAHsbKTR23wRhLTm0A9j6CftexKZJUQHtrD4q87SpqXrlwRXBeLKu04zcxcQC7LdNDrPsHCiVZuEs/BpAqyLuRhcEbu5ekK+4rmMI3u74jmRm1/vSMpGng+Fn1OrNKROu8PNq6kcKIGfYPr6d4l1R1BDs2ymVkH11pA1mCUjd4XspNcrD1KnL2BSoixD8tI5WXS8KiHPeeNGsq8mWjQaJzdu3UFXcJ4BKIt/qMVZj5ugv4zEQ==";
 
-// Khối tải MTProto chuẩn (256 KB là ước số của 1 MB, không bao giờ gây lỗi OFFSET_INVALID)
-const MTPROTO_PART_SIZE = 256 * 1024;
-// Trả về tối đa 2 MB mỗi chunk để luôn an toàn dưới giới hạn 4.5 MB của Vercel
-const MAX_CHUNK_SIZE = 2 * 1024 * 1024;
+const MTPROTO_PART_SIZE = 256 * 1024; // 256 KB
+const MAX_CHUNK_SIZE = 2 * 1024 * 1024; // 2 MB mỗi chunk
 
-// Tái sử dụng kết nối và cache thông tin file giữa các lần gọi Serverless
 globalThis.__tgMediaCache = globalThis.__tgMediaCache || new Map();
 
 async function getClient() {
-  if (!API_ID || !API_HASH || !SESSION_STR) {
-    throw new Error("Thiếu biến môi trường TG_API_ID, TG_API_HASH hoặc TG_SESSION");
-  }
   if (!globalThis.__tgClientPromise) {
     const client = new TelegramClient(new StringSession(SESSION_STR), API_ID, API_HASH, {
       connectionRetries: 3,
@@ -31,7 +27,6 @@ async function getClient() {
 
 async function getMediaInfo(client, msgId) {
   const cached = globalThis.__tgMediaCache.get(msgId);
-  // Cache hiệu lực 10 phút để tua video nhanh mà không cần hỏi lại Telegram mỗi chunk
   if (cached && Date.now() - cached.time < 10 * 60 * 1000) {
     return cached;
   }
@@ -78,8 +73,6 @@ module.exports = async (req, res) => {
     }
 
     const desiredLength = reqEnd - reqStart + 1;
-
-    // Căn chỉnh điểm bắt đầu tải xuống theo bội số 256 KB của MTProto
     const alignedStart = Math.floor(reqStart / MTPROTO_PART_SIZE) * MTPROTO_PART_SIZE;
     const skipBytes = reqStart - alignedStart;
     const bytesToFetch = skipBytes + desiredLength;
@@ -97,7 +90,6 @@ module.exports = async (req, res) => {
       if (fetched >= bytesToFetch) break;
     }
 
-    // Cắt chính xác từ byte trình duyệt yêu cầu
     const fullBuffer = Buffer.concat(chunks);
     const slice = fullBuffer.subarray(skipBytes, skipBytes + desiredLength);
     const actualEnd = reqStart + slice.length - 1;
@@ -111,7 +103,6 @@ module.exports = async (req, res) => {
     });
     res.end(slice);
   } catch (e) {
-    // Nếu file_reference hết hạn thì xóa cache để lần gọi sau lấy lại
     globalThis.__tgMediaCache.delete(msgId);
     res.status(500).json({ error: String(e.message || e) });
   }
