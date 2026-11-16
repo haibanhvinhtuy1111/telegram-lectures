@@ -1,106 +1,271 @@
-<!doctype html>
+<!DOCTYPE html>
 <html lang="vi">
 <head>
-<meta charset="utf-8">
-<meta name="viewport" content="width=device-width, initial-scale=1">
-<title>Thư viện bài giảng</title>
-<link rel="preconnect" href="https://fonts.googleapis.com">
-<link href="https://fonts.googleapis.com/css2?family=Be+Vietnam+Pro:wght@400;600;800&display=swap" rel="stylesheet">
-<style>
-  :root {
-    --board: #1f3a34; --board-2: #172c27; --chalk: #eef1ea; --dim: #a9bbb2; --yellow: #f2c94c;
-  }
-  * { box-sizing: border-box; }
-  body { margin: 0; background: var(--board-2); color: var(--chalk);
-         font: 400 16px/1.55 "Be Vietnam Pro", system-ui, sans-serif; }
-  .app { display: grid; grid-template-columns: 340px 1fr; min-height: 100vh; }
-  aside { background: var(--board); border-right: 2px solid var(--chalk); display: flex;
-          flex-direction: column; max-height: 100vh; position: sticky; top: 0; }
-  aside h1 { font-size: 1.25rem; font-weight: 800; margin: 0; padding: 20px 20px 8px; }
-  #q { margin: 8px 20px 12px; padding: 10px 12px; border: 1px solid var(--dim); border-radius: 4px;
-       background: transparent; color: var(--chalk); font: inherit; }
-  #q:focus-visible, button:focus-visible, a:focus-visible { outline: 2px solid var(--yellow); outline-offset: 2px; }
-  #list { overflow-y: auto; flex: 1; }
-  .item { display: block; width: 100%; text-align: left; padding: 12px 20px; border: 0;
-          border-left: 4px solid transparent; background: none; color: inherit; font: inherit; cursor: pointer; }
-  .item:hover { background: rgba(255,255,255,.06); }
-  .item.on { border-left-color: var(--yellow); background: rgba(255,255,255,.1); }
-  .item strong { display: block; font-weight: 600; }
-  .item span { color: var(--dim); font-size: .85rem; }
-  #more { margin: 12px 20px 20px; padding: 10px; border: 1px solid var(--chalk); border-radius: 4px;
-          background: none; color: var(--chalk); font: inherit; cursor: pointer; }
-  main { padding: 28px clamp(16px, 4vw, 48px); max-width: 880px; }
-  main h2 { font-size: clamp(1.5rem, 3vw, 2.2rem); font-weight: 800; line-height: 1.2; margin: 0 0 16px; }
-  iframe { width: 100%; height: min(75vh, 640px); border: 0; border-radius: 6px; background: #fff; }
-  #desc { white-space: pre-line; color: var(--dim); max-width: 70ch; }
-  #open { color: var(--yellow); }
-  @media (max-width: 800px) {
-    .app { grid-template-columns: 1fr; }
-    aside { position: static; max-height: 50vh; order: 2; border-right: 0; border-top: 2px solid var(--chalk); }
-  }
-</style>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Thư viện bài giảng</title>
+  <style>
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+    body {
+      font-family: system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+      background: #172a26;
+      color: #e6f2ef;
+      display: flex;
+      height: 100vh;
+      overflow: hidden;
+    }
+    /* Sidebar */
+    .sidebar {
+      width: 260px;
+      background: #12221f;
+      border-right: 1px solid #253d38;
+      display: flex;
+      flex-direction: column;
+      flex-shrink: 0;
+    }
+    .sidebar-header {
+      padding: 16px;
+      border-bottom: 1px solid #253d38;
+    }
+    .sidebar-header h2 {
+      font-size: 18px;
+      margin-bottom: 12px;
+    }
+    .search-box {
+      width: 100%;
+      padding: 8px 12px;
+      border-radius: 6px;
+      border: 1px solid #2e4a44;
+      background: #0d1917;
+      color: #fff;
+      outline: none;
+    }
+    .lecture-list {
+      flex: 1;
+      overflow-y: auto;
+    }
+    .lecture-item {
+      padding: 12px 16px;
+      border-bottom: 1px solid #1b302c;
+      cursor: pointer;
+      transition: background 0.15s;
+    }
+    .lecture-item:hover { background: #1c3530; }
+    .lecture-item.active {
+      background: #2b4530;
+      border-left: 3px solid #d4a843;
+    }
+    .lecture-title {
+      font-weight: 600;
+      font-size: 14px;
+      margin-bottom: 4px;
+      color: #f3f7f6;
+    }
+    .lecture-item.active .lecture-title { color: #f5c451; }
+    .lecture-meta {
+      font-size: 12px;
+      color: #8faea6;
+    }
+    .load-more-btn {
+      margin: 10px;
+      padding: 10px;
+      background: #182c28;
+      color: #e6f2ef;
+      border: 1px solid #2e4a44;
+      border-radius: 6px;
+      cursor: pointer;
+      font-weight: 500;
+    }
+    .load-more-btn:hover { background: #223d37; }
+    .load-more-btn:disabled { opacity: 0.5; cursor: not-allowed; }
+
+    /* Main Content */
+    .main {
+      flex: 1;
+      padding: 28px 36px;
+      overflow-y: auto;
+    }
+    .main h1 {
+      font-size: 28px;
+      margin-bottom: 20px;
+    }
+    .player-wrapper {
+      max-width: 900px;
+      background: #000;
+      border-radius: 10px;
+      overflow: hidden;
+      box-shadow: 0 8px 28px rgba(0, 0, 0, 0.45);
+    }
+    video {
+      width: 100%;
+      max-height: 72vh;
+      display: block;
+      background: #000;
+    }
+    .lecture-desc {
+      max-width: 900px;
+      margin-top: 16px;
+      line-height: 1.6;
+      white-space: pre-wrap;
+      color: #cfe0dc;
+    }
+    .tg-link {
+      display: inline-block;
+      margin-top: 16px;
+      color: #d4a843;
+      text-decoration: underline;
+      font-size: 14px;
+    }
+    .status-badge {
+      display: inline-block;
+      margin-top: 10px;
+      font-size: 12px;
+      color: #8faea6;
+    }
+  </style>
 </head>
 <body>
-<div class="app">
-  <aside>
-    <h1>Bài giảng</h1>
-    <input id="q" type="search" placeholder="Tìm bài giảng" aria-label="Tìm bài giảng">
-    <div id="list">Đang tải...</div>
-    <button id="more" hidden>Tải thêm bài cũ</button>
+  <aside class="sidebar">
+    <div class="sidebar-header">
+      <h2>Bài giảng</h2>
+      <input type="text" id="searchInput" class="search-box" placeholder="Tìm bài giảng" />
+    </div>
+    <div id="lectureList" class="lecture-list"></div>
+    <button id="loadMoreBtn" class="load-more-btn">Tải thêm bài cũ</button>
   </aside>
-  <main>
-    <h2 id="title">Chọn một bài giảng</h2>
-    <iframe id="frame" title="Video bài giảng" allowfullscreen></iframe>
-    <p id="desc"></p>
-    <a id="open" target="_blank" rel="noopener">Mở trong Telegram</a>
+
+  <main class="main" id="mainContent">
+    <h1>Đang tải bài giảng...</h1>
   </main>
-</div>
-<script>
-const $ = (s) => document.querySelector(s);
-let channel = "", items = [], next = null, current = null;
 
-async function load(before) {
-  const r = await fetch("/api/lectures" + (before ? "?before=" + before : ""));
-  if (!r.ok) { $("#list").textContent = "Không tải được danh sách. Hãy thử lại sau."; return; }
-  const d = await r.json();
-  channel = d.channel; items.push(...d.items); next = d.next;
-  $("#more").hidden = !next;
-  if (!items.length && next) return load(next);   // trang này không có video, đọc tiếp
-  render();
-  if (!current) play(Number(location.hash.slice(1)) || (items[0] && items[0].id));
-}
+  <script>
+    let allItems = [];
+    let nextBefore = null;
+    let channelName = "spankbanggggg";
+    let currentId = null;
 
-function render() {
-  const q = $("#q").value.trim().toLowerCase();
-  const list = $("#list");
-  list.replaceChildren();
-  const shown = items.filter((i) => (i.title + i.text).toLowerCase().includes(q));
-  if (!shown.length) list.textContent = "Không có bài giảng nào khớp.";
-  for (const it of shown) {
-    const b = document.createElement("button");
-    b.className = "item" + (it.id === current ? " on" : "");
-    const t = document.createElement("strong"); t.textContent = it.title;
-    const m = document.createElement("span"); m.textContent = [it.duration, it.date.slice(0, 10)].filter(Boolean).join("   ");
-    b.append(t, m);
-    b.onclick = () => play(it.id);
-    list.append(b);
-  }
-}
+    const listEl = document.getElementById("lectureList");
+    const mainEl = document.getElementById("mainContent");
+    const loadMoreBtn = document.getElementById("loadMoreBtn");
+    const searchInput = document.getElementById("searchInput");
 
-function play(id) {
-  const it = items.find((i) => i.id === id);
-  if (!it) return;
-  current = id; location.hash = id;
-  $("#frame").src = `https://t.me/${channel}/${id}?embed=1&mode=tme`;
-  $("#title").textContent = it.title;
-  $("#desc").textContent = it.text;
-  $("#open").href = `https://t.me/${channel}/${id}`;
-  render();
-}
+    async function fetchLectures(before = 0) {
+      loadMoreBtn.disabled = true;
+      loadMoreBtn.textContent = "Đang tải...";
+      try {
+        const res = await fetch(`/api/lectures${before ? `?before=${before}` : ""}`);
+        const data = await res.json();
+        if (data.error) throw new Error(data.error);
 
-$("#q").oninput = render;
-$("#more").onclick = () => load(next);
-load();
-</script>
+        channelName = data.channel || channelName;
+        nextBefore = data.next;
+
+        const existingIds = new Set(allItems.map((i) => i.id));
+        for (const item of data.items) {
+          if (!existingIds.has(item.id)) allItems.push(item);
+        }
+
+        renderList();
+
+        if (!currentId && allItems.length) {
+          const hashId = Number(location.hash.replace("#", ""));
+          const found = allItems.find((i) => i.id === hashId) || allItems[0];
+          selectLecture(found.id);
+        }
+      } catch (err) {
+        mainEl.innerHTML = `<p style="color:#ff7b7b">Lỗi tải danh sách: ${err.message}</p>`;
+      } finally {
+        loadMoreBtn.disabled = !nextBefore;
+        loadMoreBtn.textContent = nextBefore ? "Tải thêm bài cũ" : "Đã hết bài";
+      }
+    }
+
+    function renderList() {
+      const q = searchInput.value.trim().toLowerCase();
+      const filtered = allItems.filter(
+        (i) => i.title.toLowerCase().includes(q) || String(i.id).includes(q)
+      );
+
+      listEl.innerHTML = filtered
+        .map((item) => {
+          const dateStr = item.date ? item.date.slice(0, 10) : "";
+          const activeClass = item.id === currentId ? "active" : "";
+          return `
+            <div class="lecture-item ${activeClass}" onclick="selectLecture(${item.id})">
+              <div class="lecture-title">${escapeHtml(item.title)}</div>
+              <div class="lecture-meta">${item.duration} ${dateStr}</div>
+            </div>
+          `;
+        })
+        .join("");
+    }
+
+    function selectLecture(id) {
+      const item = allItems.find((i) => i.id === id);
+      if (!item) return;
+
+      currentId = id;
+      location.hash = `#${id}`;
+      renderList();
+
+      // Ưu tiên link CDN trực tiếp nếu có, nếu video lớn (Media is too big) thì phát qua /api/stream
+      const initialSrc = item.directUrl || item.streamUrl;
+      const modeText = item.directUrl
+        ? "Đang phát trực tiếp qua Telegram CDN"
+        : "Đang phát qua MTProto Stream (hỗ trợ video dung lượng lớn)";
+
+      mainEl.innerHTML = `
+        <h1>${escapeHtml(item.title)}</h1>
+        <div class="player-wrapper">
+          <video
+            id="videoPlayer"
+            src="${initialSrc}"
+            poster="${item.thumb || ""}"
+            controls
+            autoplay
+            playsinline
+            referrerpolicy="no-referrer"
+          ></video>
+        </div>
+        <div class="status-badge" id="streamStatus">${modeText}</div>
+        ${item.text ? `<div class="lecture-desc">${escapeHtml(item.text)}</div>` : ""}
+        <div>
+          <a class="tg-link" href="https://t.me/${channelName}/${item.id}" target="_blank" rel="noopener">
+            Mở trong Telegram
+          </a>
+        </div>
+      `;
+
+      // Nếu link CDN trực tiếp gặp lỗi, tự động chuyển sang /api/stream
+      const videoEl = document.getElementById("videoPlayer");
+      videoEl.onerror = () => {
+        if (videoEl.src !== location.origin + item.streamUrl) {
+          document.getElementById("streamStatus").textContent =
+            "Đang chuyển sang luồng MTProto Stream...";
+          videoEl.src = item.streamUrl;
+          videoEl.play().catch(() => {});
+        }
+      };
+    }
+
+    function escapeHtml(s) {
+      return String(s)
+        .replace(/&/g, "&amp;")
+        .replace(/</g, "&lt;")
+        .replace(/>/g, "&gt;")
+        .replace(/"/g, "&quot;");
+    }
+
+    searchInput.addEventListener("input", renderList);
+    loadMoreBtn.addEventListener("click", () => {
+      if (nextBefore) fetchLectures(nextBefore);
+    });
+    window.addEventListener("hashchange", () => {
+      const id = Number(location.hash.replace("#", ""));
+      if (id && id !== currentId) selectLecture(id);
+    });
+
+    fetchLectures();
+  </script>
 </body>
 </html>
