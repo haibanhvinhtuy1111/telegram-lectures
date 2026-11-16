@@ -3,7 +3,6 @@
   "version": "1.0.0",
   "private": true,
   "dependencies": {
-    "telegram": "^2.26.22",
-    "big-integer": "^1.6.52"
+    "telegram": "^2.26.22"
   }
 }
