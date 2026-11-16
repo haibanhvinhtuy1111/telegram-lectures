@@ -134,39 +134,37 @@
       flex-shrink: 0;
     }
 
-    .new-btn {
-      display: inline-flex;
+    .sync-card {
+      display: flex;
       align-items: center;
-      gap: 12px;
-      height: 56px;
-      padding: 0 20px;
+      gap: 10px;
+      padding: 12px 16px;
       margin: 0 4px 16px 4px;
       background: #ffffff;
       color: var(--text-primary);
-      border: none;
       border-radius: 16px;
-      font-size: 14px;
+      font-size: 13px;
       font-weight: 500;
-      cursor: pointer;
-      box-shadow: 0 1px 3px 0 rgba(60, 64, 67, 0.3), 0 4px 8px 3px rgba(60, 64, 67, 0.15);
-      transition: box-shadow 0.2s, background 0.2s;
-      width: fit-content;
+      box-shadow: 0 1px 3px 0 rgba(60, 64, 67, 0.2), 0 4px 8px 3px rgba(60, 64, 67, 0.1);
     }
 
-    .new-btn:hover:not(:disabled) {
-      background: #f8fafd;
-      box-shadow: 0 2px 6px 2px rgba(60, 64, 67, 0.2);
+    .sync-dot {
+      width: 10px;
+      height: 10px;
+      border-radius: 50%;
+      background: #1a73e8;
+      flex-shrink: 0;
+      animation: pulse 1.2s infinite ease-in-out;
     }
 
-    .new-btn:disabled {
-      opacity: 0.6;
-      cursor: not-allowed;
+    .sync-dot.done {
+      background: #34a853;
+      animation: none;
     }
 
-    .new-btn-plus {
-      font-size: 24px;
-      line-height: 1;
-      color: var(--accent-blue);
+    @keyframes pulse {
+      0%, 100% { transform: scale(0.85); opacity: 0.5; }
+      50% { transform: scale(1.2); opacity: 1; }
     }
 
     .nav-list {
@@ -515,7 +513,7 @@
       background: var(--bg-card);
     }
 
-    /* Video Player Modal (Drive Preview Style) */
+    /* Video Player Modal */
     .player-modal {
       position: fixed;
       inset: 0;
@@ -698,7 +696,7 @@
         type="text"
         id="searchInput"
         class="search-input"
-        placeholder="Tìm trong Drive bài giảng (tên bài hoặc mã #ID)..."
+        placeholder="Tìm trong toàn bộ bài giảng (tên bài hoặc mã #ID)..."
       />
       <button id="clearSearchBtn" class="clear-search" title="Xóa tìm kiếm">✕</button>
     </div>
@@ -708,10 +706,10 @@
   <div class="app-body">
     <!-- Left Sidebar -->
     <aside class="sidebar">
-      <button id="loadMoreBtn" class="new-btn">
-        <span class="new-btn-plus">+</span>
-        <span id="loadMoreText">Tải thêm bài cũ</span>
-      </button>
+      <div class="sync-card">
+        <span class="sync-dot" id="syncDot"></span>
+        <span id="syncText">Đang tải toàn bộ bài...</span>
+      </div>
 
       <nav class="nav-list">
         <div class="nav-item active" data-tab="all" onclick="switchTab('all')">
@@ -740,7 +738,7 @@
       </nav>
 
       <div class="sidebar-footer">
-        <div id="loadedSummary">Đang kết nối dữ liệu...</div>
+        <div id="loadedSummary">Đang đồng bộ dữ liệu...</div>
         <div style="margin-top: 6px;">
           Kênh nguồn: <a id="channelLink" href="https://t.me/spankbanggggg" target="_blank" rel="noopener">@spankbanggggg</a>
         </div>
@@ -828,9 +826,10 @@
 
   <script>
     let allItems = [];
-    let nextBefore = null;
+    let existingIds = new Set();
     let channelName = "spankbanggggg";
     let currentId = null;
+    let isSyncingDone = false;
 
     let activeTab = "all"; // all | recent | starred
     let durationFilter = "all"; // all | short | long
@@ -840,10 +839,12 @@
     let starredIds = new Set(JSON.parse(localStorage.getItem("tg_starred_ids") || "[]"));
     let recentIds = JSON.parse(localStorage.getItem("tg_recent_ids") || "[]");
 
+    const CACHE_KEY = "tg_all_lectures_cache_v1";
+
     const searchInput = document.getElementById("searchInput");
     const clearSearchBtn = document.getElementById("clearSearchBtn");
-    const loadMoreBtn = document.getElementById("loadMoreBtn");
-    const loadMoreText = document.getElementById("loadMoreText");
+    const syncDot = document.getElementById("syncDot");
+    const syncText = document.getElementById("syncText");
     const contentContainer = document.getElementById("contentContainer");
     const playerModal = document.getElementById("playerModal");
     const videoPlayer = document.getElementById("videoPlayer");
@@ -866,85 +867,239 @@
     function updateSidebarCounts() {
       document.getElementById("countAll").textContent = allItems.length;
       document.getElementById("countRecent").textContent = recentIds.filter((id) =>
-        allItems.some((i) => i.id === id)
+        existingIds.has(id)
       ).length;
       document.getElementById("countStarred").textContent = [...starredIds].filter((id) =>
-        allItems.some((i) => i.id === id)
+        existingIds.has(id)
       ).length;
-      document.getElementById("loadedSummary").textContent =
-        "Đã tải " + allItems.length + " bài giảng trên trang";
+
+      if (isSyncingDone) {
+        syncDot.classList.add("done");
+        syncText.textContent = "Đã tải đủ " + allItems.length + " bài giảng";
+        document.getElementById("loadedSummary").textContent =
+          "Hiển thị đầy đủ " + allItems.length + " bài giảng";
+      } else {
+        syncDot.classList.remove("done");
+        syncText.textContent = "Đang tải tự động (" + allItems.length + " bài)...";
+        document.getElementById("loadedSummary").textContent =
+          "Đã tải " + allItems.length + " bài giảng...";
+      }
+
       const chLink = document.getElementById("channelLink");
       chLink.href = "https://t.me/" + channelName;
       chLink.textContent = "@" + channelName;
     }
 
-    async function fetchLectures(before = 0) {
-      loadMoreBtn.disabled = true;
-      loadMoreText.textContent = "Đang tải...";
-      try {
-        const res = await fetch("/api/lectures" + (before ? "?before=" + before : ""));
-        const data = await res.json();
-        if (!res.ok || data.error) {
-          throw new Error(data.error || "HTTP " + res.status);
+    function matchesCurrentFilter(item) {
+      if (activeTab === "starred" && !starredIds.has(item.id)) return false;
+      if (activeTab === "recent" && !recentIds.includes(item.id)) return false;
+
+      const q = searchInput.value.trim().toLowerCase();
+      if (q) {
+        const hit =
+          item.title.toLowerCase().includes(q) ||
+          (item.text && item.text.toLowerCase().includes(q)) ||
+          String(item.id).includes(q);
+        if (!hit) return false;
+      }
+
+      if (durationFilter === "short" && parseSeconds(item.duration) >= 300) return false;
+      if (durationFilter === "long" && parseSeconds(item.duration) < 300) return false;
+
+      return true;
+    }
+
+    function buildCardHtml(item) {
+      const dateStr = item.date ? item.date.slice(0, 10) : "";
+      const isStar = starredIds.has(item.id);
+      const isPlaying = item.id === currentId && playerModal.classList.contains("open");
+      return (
+        '<div class="drive-card ' + (isPlaying ? "playing" : "") + '" id="card-' + item.id + '" onclick="openLecture(' + item.id + ')">' +
+          '<div class="card-header">' +
+            '<div class="card-title-wrap">' +
+              '<span class="video-badge-icon">▶</span>' +
+              '<span class="card-title" title="' + escapeHtml(item.title) + '">' + escapeHtml(item.title) + "</span>" +
+            "</div>" +
+            '<button class="star-btn ' + (isStar ? "starred" : "") + '" onclick="toggleStar(event, ' + item.id + ')" title="Gắn dấu sao">' +
+              (isStar ? "★" : "☆") +
+            "</button>" +
+          "</div>" +
+          '<div class="card-thumb-box">' +
+            (item.thumb
+              ? '<img class="card-thumb-img" src="' + item.thumb + '" alt="" loading="lazy" referrerpolicy="no-referrer" />'
+              : '<div class="thumb-placeholder">🎬</div>') +
+            '<div class="play-overlay">▶</div>' +
+            (item.duration ? '<span class="duration-pill">' + escapeHtml(item.duration) + "</span>" : "") +
+          "</div>" +
+          '<div class="card-footer">' +
+            "<span>Mã #" + item.id + "</span>" +
+            "<span>" + escapeHtml(dateStr) + "</span>" +
+          "</div>" +
+        "</div>"
+      );
+    }
+
+    function buildRowHtml(item) {
+      const dateStr = item.date ? item.date.slice(0, 10) : "";
+      const isStar = starredIds.has(item.id);
+      return (
+        '<tr id="row-' + item.id + '" onclick="openLecture(' + item.id + ')">' +
+          '<td><div class="card-title-wrap"><span class="video-badge-icon">▶</span><span>' + escapeHtml(item.title) + "</span></div></td>" +
+          "<td>#" + item.id + "</td>" +
+          "<td>" + escapeHtml(item.duration || "--:--") + "</td>" +
+          "<td>" + escapeHtml(dateStr) + "</td>" +
+          '<td><button class="star-btn ' + (isStar ? "starred" : "") + '" onclick="toggleStar(event, ' + item.id + ')">' + (isStar ? "★" : "☆") + "</button></td>" +
+        "</tr>"
+      );
+    }
+
+    // Chèn mượt các bài mới tải vào cuối danh sách mà không làm nháy các thẻ đang xem
+    function appendBatchToView(newBatch) {
+      const matched = newBatch.filter(matchesCurrentFilter);
+      if (!matched.length) return;
+
+      // Nếu đang sắp xếp Cũ nhất lên đầu hoặc ở tab Gần đây thì render lại
+      if (!sortDesc || activeTab === "recent") {
+        renderContent();
+        return;
+      }
+
+      const gridEl = document.getElementById("driveGrid");
+      const listBodyEl = document.getElementById("driveListBody");
+      const labelEl = document.getElementById("sectionLabelCount");
+
+      if (viewMode === "grid" && gridEl) {
+        gridEl.insertAdjacentHTML("beforeend", matched.map(buildCardHtml).join(""));
+        if (labelEl) {
+          labelEl.textContent = "Tệp bài giảng (" + gridEl.children.length + ")";
         }
+      } else if (viewMode === "list" && listBodyEl) {
+        listBodyEl.insertAdjacentHTML("beforeend", matched.map(buildRowHtml).join(""));
+      } else {
+        renderContent();
+      }
+    }
 
-        channelName = data.channel || channelName;
-        nextBefore = data.next;
+    // Tự động tải toàn bộ các bài giảng từ mới nhất đến bài đầu tiên
+    async function autoLoadAllLectures() {
+      // Khôi phục bộ nhớ đệm nếu có để hiện ngay lập tức
+      try {
+        const cached = JSON.parse(sessionStorage.getItem(CACHE_KEY) || "null");
+        if (cached && Array.isArray(cached.items) && cached.items.length > 0) {
+          allItems = cached.items;
+          channelName = cached.channel || channelName;
+          existingIds = new Set(allItems.map((i) => i.id));
+          isSyncingDone = Boolean(cached.done);
+          updateSidebarCounts();
+          renderContent();
+        }
+      } catch (_) {}
 
-        const existingIds = new Set(allItems.map((i) => i.id));
-        for (const item of data.items || []) {
-          if (!existingIds.has(item.id)) {
-            allItems.push(item);
+      let cursor = 0;
+      // Nếu đã có cache một phần, tiếp tục tải từ ID nhỏ nhất đã có
+      if (allItems.length > 0 && !isSyncingDone) {
+        cursor = Math.min(...allItems.map((i) => i.id));
+      }
+
+      // Kiểm tra bài mới nhất ở trang đầu tiên
+      try {
+        const firstRes = await fetch("/api/lectures");
+        const firstData = await firstRes.json();
+        if (firstRes.ok && !firstData.error) {
+          channelName = firstData.channel || channelName;
+          const freshItems = (firstData.items || []).filter((i) => !existingIds.has(i.id));
+          if (freshItems.length > 0) {
+            for (const item of freshItems) {
+              existingIds.add(item.id);
+              allItems.push(item);
+            }
+            allItems.sort((a, b) => b.id - a.id);
+            updateSidebarCounts();
+            renderContent();
+          }
+          if (!cursor) {
+            cursor = firstData.next;
           }
         }
-
-        updateSidebarCounts();
-        renderContent();
-
-        // Nếu trên URL có sẵn #ID thì mở luôn bài đó
-        const hashId = Number(location.hash.replace("#", ""));
-        if (hashId && !currentId) {
-          const target = allItems.find((i) => i.id === hashId);
-          if (target) openLecture(target.id);
-        }
       } catch (err) {
-        contentContainer.innerHTML =
-          '<div class="empty-state" style="color:#d93025">' +
-          "<h3>Không thể tải danh sách bài giảng</h3>" +
-          '<p style="margin-top:8px">' + escapeHtml(err.message) + "</p></div>";
-      } finally {
-        loadMoreBtn.disabled = !nextBefore;
-        loadMoreText.textContent = nextBefore ? "Tải thêm bài cũ" : "Đã tải hết bài";
+        if (!allItems.length) {
+          contentContainer.innerHTML =
+            '<div class="empty-state" style="color:#d93025">' +
+            "<h3>Không thể tải danh sách bài giảng</h3>" +
+            '<p style="margin-top:8px">' + escapeHtml(err.message) + "</p></div>";
+          return;
+        }
+      }
+
+      // Kiểm tra nếu URL có #ID ngay từ đợt đầu
+      checkUrlHashToOpen();
+
+      // Vòng lặp tự động tải toàn bộ các trang cũ hơn cho đến khi hết sạch kênh
+      while (cursor && !isSyncingDone) {
+        try {
+          const res = await fetch("/api/lectures?before=" + cursor);
+          const data = await res.json();
+          if (!res.ok || data.error) break;
+
+          const newBatch = [];
+          for (const item of data.items || []) {
+            if (!existingIds.has(item.id)) {
+              existingIds.add(item.id);
+              allItems.push(item);
+              newBatch.push(item);
+            }
+          }
+
+          cursor = data.next;
+          if (!cursor) {
+            isSyncingDone = true;
+          }
+
+          updateSidebarCounts();
+          if (newBatch.length > 0) {
+            appendBatchToView(newBatch);
+          }
+
+          // Lưu cache tạm thời
+          try {
+            sessionStorage.setItem(
+              CACHE_KEY,
+              JSON.stringify({ channel: channelName, items: allItems, done: isSyncingDone })
+            );
+          } catch (_) {}
+
+          checkUrlHashToOpen();
+        } catch (_) {
+          // Nếu mạng chập chờn thì nghỉ 1.5s rồi tải tiếp
+          await new Promise((r) => setTimeout(r, 1500));
+        }
+      }
+
+      isSyncingDone = true;
+      updateSidebarCounts();
+      try {
+        sessionStorage.setItem(
+          CACHE_KEY,
+          JSON.stringify({ channel: channelName, items: allItems, done: true })
+        );
+      } catch (_) {}
+    }
+
+    function checkUrlHashToOpen() {
+      const hashId = Number(location.hash.replace("#", ""));
+      if (hashId && !currentId) {
+        const target = allItems.find((i) => i.id === hashId);
+        if (target) openLecture(target.id);
       }
     }
 
     function getFilteredItems() {
-      const q = searchInput.value.trim().toLowerCase();
-      let list = allItems.slice();
+      let list = allItems.filter(matchesCurrentFilter);
 
       if (activeTab === "recent") {
-        const recentMap = new Map(allItems.map((i) => [i.id, i]));
+        const recentMap = new Map(list.map((i) => [i.id, i]));
         list = recentIds.map((id) => recentMap.get(id)).filter(Boolean);
-      } else if (activeTab === "starred") {
-        list = list.filter((i) => starredIds.has(i.id));
-      }
-
-      if (q) {
-        list = list.filter(
-          (i) =>
-            i.title.toLowerCase().includes(q) ||
-            (i.text && i.text.toLowerCase().includes(q)) ||
-            String(i.id).includes(q)
-        );
-      }
-
-      if (durationFilter === "short") {
-        list = list.filter((i) => parseSeconds(i.duration) < 300);
-      } else if (durationFilter === "long") {
-        list = list.filter((i) => parseSeconds(i.duration) >= 300);
-      }
-
-      if (activeTab !== "recent") {
+      } else {
         list.sort((a, b) => (sortDesc ? b.id - a.id : a.id - b.id));
       }
 
@@ -956,45 +1111,19 @@
 
       if (!items.length) {
         contentContainer.innerHTML =
-          '<div class="empty-state">Không tìm thấy bài giảng nào phù hợp.</div>';
+          '<div class="empty-state">' +
+          (isSyncingDone
+            ? "Không tìm thấy bài giảng nào phù hợp."
+            : "Đang tải dữ liệu bài giảng, vui lòng chờ giây lát...") +
+          "</div>";
         return;
       }
 
       if (viewMode === "grid") {
         contentContainer.innerHTML =
-          '<div class="section-label">Tệp bài giảng (' + items.length + ")</div>" +
-          '<div class="drive-grid">' +
-          items
-            .map((item) => {
-              const dateStr = item.date ? item.date.slice(0, 10) : "";
-              const isStar = starredIds.has(item.id);
-              const isPlaying = item.id === currentId && playerModal.classList.contains("open");
-              return (
-                '<div class="drive-card ' + (isPlaying ? "playing" : "") + '" onclick="openLecture(' + item.id + ')">' +
-                  '<div class="card-header">' +
-                    '<div class="card-title-wrap">' +
-                      '<span class="video-badge-icon">▶</span>' +
-                      '<span class="card-title" title="' + escapeHtml(item.title) + '">' + escapeHtml(item.title) + "</span>" +
-                    "</div>" +
-                    '<button class="star-btn ' + (isStar ? "starred" : "") + '" onclick="toggleStar(event, ' + item.id + ')" title="Gắn dấu sao">' +
-                      (isStar ? "★" : "☆") +
-                    "</button>" +
-                  "</div>" +
-                  '<div class="card-thumb-box">' +
-                    (item.thumb
-                      ? '<img class="card-thumb-img" src="' + item.thumb + '" alt="" loading="lazy" referrerpolicy="no-referrer" />'
-                      : '<div class="thumb-placeholder">🎬</div>') +
-                    '<div class="play-overlay">▶</div>' +
-                    (item.duration ? '<span class="duration-pill">' + escapeHtml(item.duration) + "</span>" : "") +
-                  "</div>" +
-                  '<div class="card-footer">' +
-                    "<span>Mã #" + item.id + "</span>" +
-                    "<span>" + escapeHtml(dateStr) + "</span>" +
-                  "</div>" +
-                "</div>"
-              );
-            })
-            .join("") +
+          '<div class="section-label" id="sectionLabelCount">Tệp bài giảng (' + items.length + ")</div>" +
+          '<div class="drive-grid" id="driveGrid">' +
+          items.map(buildCardHtml).join("") +
           "</div>";
       } else {
         contentContainer.innerHTML =
@@ -1006,22 +1135,8 @@
               "<th>Ngày đăng</th>" +
               "<th>Dấu sao</th>" +
             "</tr></thead>" +
-            "<tbody>" +
-              items
-                .map((item) => {
-                  const dateStr = item.date ? item.date.slice(0, 10) : "";
-                  const isStar = starredIds.has(item.id);
-                  return (
-                    '<tr onclick="openLecture(' + item.id + ')">' +
-                      '<td><div class="card-title-wrap"><span class="video-badge-icon">▶</span><span>' + escapeHtml(item.title) + "</span></div></td>" +
-                      "<td>#" + item.id + "</td>" +
-                      "<td>" + escapeHtml(item.duration || "--:--") + "</td>" +
-                      "<td>" + escapeHtml(dateStr) + "</td>" +
-                      '<td><button class="star-btn ' + (isStar ? "starred" : "") + '" onclick="toggleStar(event, ' + item.id + ')">' + (isStar ? "★" : "☆") + "</button></td>" +
-                    "</tr>"
-                  );
-                })
-                .join("") +
+            '<tbody id="driveListBody">' +
+              items.map(buildRowHtml).join("") +
             "</tbody>" +
           "</table>";
       }
@@ -1034,10 +1149,12 @@
       currentId = id;
       location.hash = "#" + id;
 
-      // Lưu vào danh sách xem gần đây
       recentIds = [id, ...recentIds.filter((r) => r !== id)];
       saveStorage();
-      renderContent();
+
+      document.querySelectorAll(".drive-card.playing").forEach((el) => el.classList.remove("playing"));
+      const activeCard = document.getElementById("card-" + id);
+      if (activeCard) activeCard.classList.add("playing");
 
       const streamUrl = item.streamUrl || ("/api/stream?id=" + item.id);
       const initialSrc = item.directUrl || streamUrl;
@@ -1092,7 +1209,7 @@
       videoPlayer.load();
       playerModal.classList.remove("open");
       history.replaceState(null, "", location.pathname + location.search);
-      renderContent();
+      document.querySelectorAll(".drive-card.playing").forEach((el) => el.classList.remove("playing"));
     }
 
     function handleStageClick(e) {
@@ -1198,10 +1315,6 @@
       renderContent();
     });
 
-    loadMoreBtn.addEventListener("click", () => {
-      if (nextBefore) fetchLectures(nextBefore);
-    });
-
     window.addEventListener("keydown", (e) => {
       if (!playerModal.classList.contains("open")) return;
       if (e.key === "Escape") closePlayer();
@@ -1209,7 +1322,7 @@
       if (e.key === "ArrowRight") playAdjacent(1);
     });
 
-    fetchLectures();
+    autoLoadAllLectures();
   </script>
 </body>
 </html>
