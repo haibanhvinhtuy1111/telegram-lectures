@@ -1,11 +1,17 @@
-// GET /api/lectures            -> bài mới nhất
-// GET /api/lectures?before=ID  -> các bài cũ hơn ID
-// Đọc trang xem trước công khai https://t.me/s/<kênh>, không cần token hay đăng nhập.
+// GET /api/lectures           -> bài mới nhất
+// GET /api/lectures?before=ID -> các bài cũ hơn ID
 const CHANNEL = process.env.TG_CHANNEL || "spankbanggggg";
 
 const decode = (s) =>
-  s.replace(/&quot;/g, '"').replace(/&#39;/g, "'").replace(/&lt;/g, "<")
-   .replace(/&gt;/g, ">").replace(/&amp;/g, "&");
+  s
+    .replace(/&#(\d+);/g, (_, n) => String.fromCharCode(Number(n)))
+    .replace(/&#x([0-9a-fA-F]+);/g, (_, h) => String.fromCharCode(parseInt(h, 16)))
+    .replace(/&nbsp;/g, " ")
+    .replace(/&quot;/g, '"')
+    .replace(/&#39;/g, "'")
+    .replace(/&lt;/g, "<")
+    .replace(/&gt;/g, ">")
+    .replace(/&amp;/g, "&");
 
 module.exports = async (req, res) => {
   const before = Number(req.query.before) || 0;
@@ -25,7 +31,14 @@ module.exports = async (req, res) => {
       const id = idOf(b);
       if (!id || !b.includes("tgme_widget_message_video")) continue;
 
-      const raw = (b.match(/class="tgme_widget_message_text[^"]*"[^>]*>([\s\S]*?)<\/div>/) || [])[1] || "";
+      const directUrl = (b.match(/<video[^>]+src="([^"]+)"/) || [])[1] || null;
+      const thumb =
+        (b.match(/tgme_widget_message_video_thumb[^>]+background-image:url\('([^']+)'\)/) || [])[1] ||
+        null;
+
+      const raw =
+        (b.match(/class="tgme_widget_message_text js-message_text[^"]*"[^>]*>([\s\S]*?)<\/div>/) ||
+          [])[1] || "";
       const text = decode(raw.replace(/<br\s*\/?>/g, "\n").replace(/<[^>]+>/g, "")).trim();
 
       items.push({
@@ -34,9 +47,12 @@ module.exports = async (req, res) => {
         text,
         duration: (b.match(/message_video_duration[^>]*>([^<]+)</) || [])[1] || "",
         date: (b.match(/<time[^>]*datetime="([^"]+)"/) || [])[1] || "",
+        directUrl,
+        streamUrl: `/api/stream?id=${id}`,
+        thumb,
       });
     }
-    items.reverse(); // mới nhất lên đầu
+    items.reverse();
 
     const min = allIds.length ? Math.min(...allIds) : 0;
     res.setHeader("Cache-Control", "s-maxage=300, stale-while-revalidate=600");
