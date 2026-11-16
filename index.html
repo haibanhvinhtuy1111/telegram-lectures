@@ -3,138 +3,828 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>Thư viện bài giảng</title>
+  <title>Drive Bài Giảng</title>
   <style>
-    * { box-sizing: border-box; margin: 0; padding: 0; }
+    :root {
+      --bg-shell: #f8fafd;
+      --bg-surface: #ffffff;
+      --bg-card: #f0f4f9;
+      --bg-card-hover: #dfe3e7;
+      --bg-search: #e9eef6;
+      --bg-active-pill: #c2e7ff;
+      --text-primary: #1f1f1f;
+      --text-secondary: #444746;
+      --text-muted: #5f6368;
+      --accent-blue: #0b57d0;
+      --accent-red: #d93025;
+      --border-color: #dadce0;
+      --chip-border: #747775;
+    }
+
+    * {
+      box-sizing: border-box;
+      margin: 0;
+      padding: 0;
+    }
+
     body {
-      font-family: system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
-      background: #172a26;
-      color: #e6f2ef;
-      display: flex;
+      font-family: "Google Sans", Roboto, system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+      background: var(--bg-shell);
+      color: var(--text-primary);
       height: 100vh;
+      display: flex;
+      flex-direction: column;
       overflow: hidden;
     }
+
+    /* Top Header */
+    .topbar {
+      height: 64px;
+      display: flex;
+      align-items: center;
+      padding: 8px 20px 8px 16px;
+      gap: 20px;
+      flex-shrink: 0;
+    }
+
+    .brand {
+      width: 232px;
+      display: flex;
+      align-items: center;
+      gap: 12px;
+      font-size: 22px;
+      color: var(--text-secondary);
+      font-weight: 500;
+      user-select: none;
+      flex-shrink: 0;
+    }
+
+    .brand-icon {
+      width: 36px;
+      height: 36px;
+      border-radius: 8px;
+      background: linear-gradient(135deg, #1a73e8, #34a853, #fbbc04, #ea4335);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      color: #fff;
+      font-weight: 700;
+      font-size: 18px;
+    }
+
+    .search-wrapper {
+      flex: 1;
+      max-width: 720px;
+      position: relative;
+      display: flex;
+      align-items: center;
+    }
+
+    .search-icon {
+      position: absolute;
+      left: 16px;
+      color: var(--text-secondary);
+      pointer-events: none;
+      font-size: 16px;
+    }
+
+    .search-input {
+      width: 100%;
+      height: 46px;
+      padding: 0 42px 0 46px;
+      border-radius: 999px;
+      border: none;
+      background: var(--bg-search);
+      font-size: 15px;
+      color: var(--text-primary);
+      outline: none;
+      transition: background 0.2s, box-shadow 0.2s;
+    }
+
+    .search-input:focus {
+      background: #ffffff;
+      box-shadow: 0 1px 6px rgba(32, 33, 36, 0.28);
+    }
+
+    .clear-search {
+      position: absolute;
+      right: 14px;
+      background: none;
+      border: none;
+      cursor: pointer;
+      color: var(--text-secondary);
+      font-size: 18px;
+      display: none;
+    }
+
+    /* App Layout */
+    .app-body {
+      flex: 1;
+      display: flex;
+      overflow: hidden;
+      padding: 0 16px 16px 0;
+    }
+
+    /* Left Sidebar */
     .sidebar {
-      width: 260px;
-      background: #12221f;
-      border-right: 1px solid #253d38;
+      width: 248px;
+      padding: 4px 12px 16px 12px;
       display: flex;
       flex-direction: column;
       flex-shrink: 0;
     }
-    .sidebar-header {
-      padding: 16px;
-      border-bottom: 1px solid #253d38;
-    }
-    .sidebar-header h2 {
-      font-size: 18px;
-      margin-bottom: 12px;
-    }
-    .search-box {
-      width: 100%;
-      padding: 8px 12px;
-      border-radius: 6px;
-      border: 1px solid #2e4a44;
-      background: #0d1917;
-      color: #fff;
-      outline: none;
-    }
-    .lecture-list {
-      flex: 1;
-      overflow-y: auto;
-    }
-    .lecture-item {
-      padding: 12px 16px;
-      border-bottom: 1px solid #1b302c;
+
+    .new-btn {
+      display: inline-flex;
+      align-items: center;
+      gap: 12px;
+      height: 56px;
+      padding: 0 20px;
+      margin: 0 4px 16px 4px;
+      background: #ffffff;
+      color: var(--text-primary);
+      border: none;
+      border-radius: 16px;
+      font-size: 14px;
+      font-weight: 500;
       cursor: pointer;
+      box-shadow: 0 1px 3px 0 rgba(60, 64, 67, 0.3), 0 4px 8px 3px rgba(60, 64, 67, 0.15);
+      transition: box-shadow 0.2s, background 0.2s;
+      width: fit-content;
+    }
+
+    .new-btn:hover:not(:disabled) {
+      background: #f8fafd;
+      box-shadow: 0 2px 6px 2px rgba(60, 64, 67, 0.2);
+    }
+
+    .new-btn:disabled {
+      opacity: 0.6;
+      cursor: not-allowed;
+    }
+
+    .new-btn-plus {
+      font-size: 24px;
+      line-height: 1;
+      color: var(--accent-blue);
+    }
+
+    .nav-list {
+      display: flex;
+      flex-direction: column;
+      gap: 2px;
+    }
+
+    .nav-item {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      height: 36px;
+      padding: 0 16px;
+      border-radius: 999px;
+      font-size: 14px;
+      color: var(--text-secondary);
+      cursor: pointer;
+      user-select: none;
       transition: background 0.15s;
     }
-    .lecture-item:hover { background: #1c3530; }
-    .lecture-item.active {
-      background: #2b4530;
-      border-left: 3px solid #d4a843;
+
+    .nav-item:hover {
+      background: #e8ebee;
     }
-    .lecture-title {
+
+    .nav-item.active {
+      background: var(--bg-active-pill);
+      color: #001d35;
       font-weight: 600;
-      font-size: 14px;
-      margin-bottom: 4px;
-      color: #f3f7f6;
     }
-    .lecture-item.active .lecture-title { color: #f5c451; }
-    .lecture-meta {
+
+    .nav-left {
+      display: flex;
+      align-items: center;
+      gap: 12px;
+    }
+
+    .nav-count {
       font-size: 12px;
-      color: #8faea6;
+      color: var(--text-muted);
     }
-    .load-more-btn {
-      margin: 10px;
-      padding: 10px;
-      background: #182c28;
-      color: #e6f2ef;
-      border: 1px solid #2e4a44;
-      border-radius: 6px;
-      cursor: pointer;
+
+    .sidebar-footer {
+      margin-top: auto;
+      padding: 14px 16px;
+      border-top: 1px solid var(--border-color);
+      font-size: 12px;
+      color: var(--text-muted);
+      line-height: 1.6;
+    }
+
+    .sidebar-footer a {
+      color: var(--accent-blue);
+      text-decoration: none;
       font-weight: 500;
     }
-    .load-more-btn:hover { background: #223d37; }
-    .load-more-btn:disabled { opacity: 0.5; cursor: not-allowed; }
 
-    .main {
+    /* Main Workspace */
+    .workspace {
       flex: 1;
-      padding: 28px 36px;
-      overflow-y: auto;
-    }
-    .main h1 {
-      font-size: 28px;
-      margin-bottom: 20px;
-    }
-    .player-wrapper {
-      max-width: 900px;
-      background: #000;
-      border-radius: 10px;
+      background: var(--bg-surface);
+      border-radius: 16px;
+      display: flex;
+      flex-direction: column;
       overflow: hidden;
-      box-shadow: 0 8px 28px rgba(0, 0, 0, 0.45);
+      border: 1px solid #edf0f5;
     }
+
+    .workspace-header {
+      padding: 16px 24px 12px 24px;
+      display: flex;
+      flex-direction: column;
+      gap: 12px;
+      border-bottom: 1px solid #f1f3f4;
+    }
+
+    .workspace-top-row {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+    }
+
+    .workspace-title {
+      font-size: 22px;
+      font-weight: 400;
+      color: var(--text-primary);
+    }
+
+    .view-toggle {
+      display: inline-flex;
+      border: 1px solid var(--chip-border);
+      border-radius: 999px;
+      overflow: hidden;
+      height: 32px;
+    }
+
+    .view-btn {
+      border: none;
+      background: transparent;
+      padding: 0 14px;
+      font-size: 13px;
+      cursor: pointer;
+      color: var(--text-secondary);
+      display: flex;
+      align-items: center;
+      gap: 6px;
+    }
+
+    .view-btn.active {
+      background: var(--bg-active-pill);
+      color: #001d35;
+      font-weight: 600;
+    }
+
+    /* Filter Chips */
+    .chips-row {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      flex-wrap: wrap;
+    }
+
+    .chip {
+      height: 32px;
+      padding: 0 12px;
+      border-radius: 8px;
+      border: 1px solid var(--chip-border);
+      background: #ffffff;
+      color: var(--text-secondary);
+      font-size: 13px;
+      font-weight: 500;
+      cursor: pointer;
+      display: inline-flex;
+      align-items: center;
+      gap: 6px;
+      transition: background 0.15s;
+    }
+
+    .chip:hover {
+      background: #f1f3f4;
+    }
+
+    .chip.active {
+      background: #e8f0fe;
+      border-color: #1a73e8;
+      color: #1967d2;
+    }
+
+    /* Content Scroll Area */
+    .content-scroll {
+      flex: 1;
+      overflow-y: auto;
+      padding: 16px 24px 32px 24px;
+    }
+
+    .section-label {
+      font-size: 14px;
+      font-weight: 500;
+      color: var(--text-secondary);
+      margin-bottom: 12px;
+    }
+
+    /* Grid View (Drive Card Style) */
+    .drive-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fill, minmax(235px, 1fr));
+      gap: 16px;
+    }
+
+    .drive-card {
+      background: var(--bg-card);
+      border-radius: 12px;
+      padding: 10px 12px 12px 12px;
+      cursor: pointer;
+      transition: background 0.15s, box-shadow 0.15s;
+      display: flex;
+      flex-direction: column;
+      gap: 8px;
+      user-select: none;
+    }
+
+    .drive-card:hover {
+      background: var(--bg-card-hover);
+    }
+
+    .drive-card.playing {
+      outline: 2px solid var(--accent-blue);
+      background: #e8f0fe;
+    }
+
+    .card-header {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 8px;
+      height: 28px;
+    }
+
+    .card-title-wrap {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      overflow: hidden;
+      flex: 1;
+    }
+
+    .video-badge-icon {
+      width: 20px;
+      height: 20px;
+      border-radius: 4px;
+      background: var(--accent-red);
+      color: #fff;
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 10px;
+      flex-shrink: 0;
+    }
+
+    .card-title {
+      font-size: 13.5px;
+      font-weight: 500;
+      color: var(--text-primary);
+      white-space: nowrap;
+      overflow: hidden;
+      text-overflow: ellipsis;
+    }
+
+    .star-btn {
+      background: none;
+      border: none;
+      cursor: pointer;
+      font-size: 17px;
+      color: var(--text-muted);
+      padding: 4px;
+      border-radius: 50%;
+      line-height: 1;
+    }
+
+    .star-btn:hover {
+      background: rgba(0, 0, 0, 0.08);
+    }
+
+    .star-btn.starred {
+      color: #fbbc04;
+    }
+
+    .card-thumb-box {
+      width: 100%;
+      aspect-ratio: 16 / 9;
+      background: #1f1f1f;
+      border-radius: 8px;
+      overflow: hidden;
+      position: relative;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+    }
+
+    .card-thumb-img {
+      width: 100%;
+      height: 100%;
+      object-fit: cover;
+      display: block;
+      transition: transform 0.25s;
+    }
+
+    .drive-card:hover .card-thumb-img {
+      transform: scale(1.03);
+    }
+
+    .thumb-placeholder {
+      color: rgba(255, 255, 255, 0.7);
+      font-size: 32px;
+    }
+
+    .duration-pill {
+      position: absolute;
+      bottom: 8px;
+      right: 8px;
+      background: rgba(0, 0, 0, 0.78);
+      color: #fff;
+      font-size: 11.5px;
+      font-weight: 500;
+      padding: 2px 6px;
+      border-radius: 4px;
+    }
+
+    .play-overlay {
+      position: absolute;
+      width: 44px;
+      height: 44px;
+      border-radius: 50%;
+      background: rgba(0, 0, 0, 0.6);
+      color: #fff;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 18px;
+      opacity: 0;
+      transition: opacity 0.15s;
+    }
+
+    .drive-card:hover .play-overlay {
+      opacity: 1;
+    }
+
+    .card-footer {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      font-size: 11.5px;
+      color: var(--text-muted);
+      padding: 0 2px;
+    }
+
+    /* List View */
+    .drive-list {
+      width: 100%;
+      border-collapse: collapse;
+    }
+
+    .drive-list th {
+      text-align: left;
+      font-size: 13px;
+      font-weight: 500;
+      color: var(--text-secondary);
+      padding: 10px 12px;
+      border-bottom: 1px solid var(--border-color);
+    }
+
+    .drive-list td {
+      padding: 10px 12px;
+      border-bottom: 1px solid #f1f3f4;
+      font-size: 14px;
+      color: var(--text-primary);
+    }
+
+    .drive-list tr {
+      cursor: pointer;
+      transition: background 0.12s;
+    }
+
+    .drive-list tbody tr:hover {
+      background: var(--bg-card);
+    }
+
+    /* Video Player Modal (Drive Preview Style) */
+    .player-modal {
+      position: fixed;
+      inset: 0;
+      background: rgba(15, 18, 22, 0.9);
+      z-index: 1000;
+      display: none;
+      flex-direction: column;
+      color: #fff;
+    }
+
+    .player-modal.open {
+      display: flex;
+    }
+
+    .modal-topbar {
+      height: 60px;
+      padding: 0 20px;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      background: rgba(0, 0, 0, 0.45);
+    }
+
+    .modal-title-group {
+      display: flex;
+      align-items: center;
+      gap: 12px;
+      overflow: hidden;
+    }
+
+    .modal-close-btn {
+      background: none;
+      border: none;
+      color: #fff;
+      font-size: 22px;
+      cursor: pointer;
+      width: 40px;
+      height: 40px;
+      border-radius: 50%;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+    }
+
+    .modal-close-btn:hover {
+      background: rgba(255, 255, 255, 0.12);
+    }
+
+    .modal-title {
+      font-size: 16px;
+      font-weight: 500;
+      white-space: nowrap;
+      overflow: hidden;
+      text-overflow: ellipsis;
+    }
+
+    .modal-actions {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+    }
+
+    .modal-action-btn {
+      padding: 8px 14px;
+      border-radius: 999px;
+      border: 1px solid rgba(255, 255, 255, 0.25);
+      background: rgba(255, 255, 255, 0.1);
+      color: #fff;
+      text-decoration: none;
+      font-size: 13px;
+      cursor: pointer;
+      display: inline-flex;
+      align-items: center;
+      gap: 6px;
+    }
+
+    .modal-action-btn:hover {
+      background: rgba(255, 255, 255, 0.2);
+    }
+
+    .modal-stage {
+      flex: 1;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      position: relative;
+      padding: 12px 64px;
+      overflow: hidden;
+    }
+
+    .nav-arrow {
+      position: absolute;
+      top: 50%;
+      transform: translateY(-50%);
+      width: 44px;
+      height: 44px;
+      border-radius: 50%;
+      border: none;
+      background: rgba(255, 255, 255, 0.14);
+      color: #fff;
+      font-size: 20px;
+      cursor: pointer;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+    }
+
+    .nav-arrow:hover {
+      background: rgba(255, 255, 255, 0.28);
+    }
+
+    .nav-arrow.prev { left: 16px; }
+    .nav-arrow.next { right: 16px; }
+
+    .video-container {
+      width: 100%;
+      max-width: 1020px;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+    }
+
     video {
       width: 100%;
-      max-height: 72vh;
-      display: block;
+      max-height: 74vh;
       background: #000;
+      border-radius: 12px;
+      box-shadow: 0 12px 40px rgba(0, 0, 0, 0.6);
     }
-    .lecture-desc {
-      max-width: 900px;
-      margin-top: 16px;
-      line-height: 1.6;
-      white-space: pre-wrap;
-      color: #cfe0dc;
+
+    .modal-bottom-info {
+      width: 100%;
+      max-width: 1020px;
+      margin-top: 12px;
+      display: flex;
+      flex-direction: column;
+      gap: 6px;
     }
-    .tg-link {
-      display: inline-block;
-      margin-top: 16px;
-      color: #d4a843;
-      text-decoration: underline;
-      font-size: 14px;
-    }
-    .status-badge {
-      display: inline-block;
-      margin-top: 10px;
+
+    .stream-status {
       font-size: 13px;
-      color: #8faea6;
+      color: #a8c7fa;
+    }
+
+    .video-caption {
+      font-size: 13.5px;
+      color: #e3e3e3;
+      max-height: 68px;
+      overflow-y: auto;
+      white-space: pre-wrap;
+      line-height: 1.5;
+    }
+
+    .empty-state {
+      text-align: center;
+      padding: 64px 20px;
+      color: var(--text-muted);
+    }
+
+    @media (max-width: 768px) {
+      .sidebar { display: none; }
+      .brand { width: auto; }
+      .app-body { padding: 0 8px 8px 8px; }
+      .modal-stage { padding: 12px; }
+      .nav-arrow { display: none; }
     }
   </style>
 </head>
 <body>
-  <aside class="sidebar">
-    <div class="sidebar-header">
-      <h2>Bài giảng</h2>
-      <input type="text" id="searchInput" class="search-box" placeholder="Tìm bài giảng" />
+  <!-- Top Bar -->
+  <header class="topbar">
+    <div class="brand">
+      <div class="brand-icon">▶</div>
+      <span>Drive Bài Giảng</span>
     </div>
-    <div id="lectureList" class="lecture-list"></div>
-    <button id="loadMoreBtn" class="load-more-btn">Tải thêm bài cũ</button>
-  </aside>
 
-  <main class="main" id="mainContent">
-    <h1>Đang tải bài giảng...</h1>
-  </main>
+    <div class="search-wrapper">
+      <span class="search-icon">🔍</span>
+      <input
+        type="text"
+        id="searchInput"
+        class="search-input"
+        placeholder="Tìm trong Drive bài giảng (tên bài hoặc mã #ID)..."
+      />
+      <button id="clearSearchBtn" class="clear-search" title="Xóa tìm kiếm">✕</button>
+    </div>
+  </header>
+
+  <!-- Main Body -->
+  <div class="app-body">
+    <!-- Left Sidebar -->
+    <aside class="sidebar">
+      <button id="loadMoreBtn" class="new-btn">
+        <span class="new-btn-plus">+</span>
+        <span id="loadMoreText">Tải thêm bài cũ</span>
+      </button>
+
+      <nav class="nav-list">
+        <div class="nav-item active" data-tab="all" onclick="switchTab('all')">
+          <div class="nav-left">
+            <span>📁</span>
+            <span>Drive của tôi</span>
+          </div>
+          <span class="nav-count" id="countAll">0</span>
+        </div>
+
+        <div class="nav-item" data-tab="recent" onclick="switchTab('recent')">
+          <div class="nav-left">
+            <span>🕒</span>
+            <span>Gần đây</span>
+          </div>
+          <span class="nav-count" id="countRecent">0</span>
+        </div>
+
+        <div class="nav-item" data-tab="starred" onclick="switchTab('starred')">
+          <div class="nav-left">
+            <span>⭐</span>
+            <span>Có gắn dấu sao</span>
+          </div>
+          <span class="nav-count" id="countStarred">0</span>
+        </div>
+      </nav>
+
+      <div class="sidebar-footer">
+        <div id="loadedSummary">Đang kết nối dữ liệu...</div>
+        <div style="margin-top: 6px;">
+          Kênh nguồn: <a id="channelLink" href="https://t.me/spankbanggggg" target="_blank" rel="noopener">@spankbanggggg</a>
+        </div>
+      </div>
+    </aside>
+
+    <!-- Main Workspace -->
+    <main class="workspace">
+      <div class="workspace-header">
+        <div class="workspace-top-row">
+          <h1 class="workspace-title" id="workspaceTitle">Drive của tôi</h1>
+
+          <div class="view-toggle">
+            <button id="listViewBtn" class="view-btn" onclick="setViewMode('list')" title="Bố cục danh sách">
+              ☰
+            </button>
+            <button id="gridViewBtn" class="view-btn active" onclick="setViewMode('grid')" title="Bố cục lưới">
+              ✓ ⊞
+            </button>
+          </div>
+        </div>
+
+        <div class="chips-row">
+          <button class="chip active" data-duration="all" onclick="setDurationFilter('all')">
+            Tất cả thời lượng
+          </button>
+          <button class="chip" data-duration="short" onclick="setDurationFilter('short')">
+            ⚡ Dưới 5 phút
+          </button>
+          <button class="chip" data-duration="long" onclick="setDurationFilter('long')">
+            🎬 Trên 5 phút
+          </button>
+          <button class="chip" id="sortChip" onclick="toggleSortOrder()">
+            Sắp xếp: Mới nhất ↓
+          </button>
+        </div>
+      </div>
+
+      <div class="content-scroll" id="contentContainer">
+        <div class="empty-state">Đang tải danh sách bài giảng...</div>
+      </div>
+    </main>
+  </div>
+
+  <!-- Video Player Modal -->
+  <div class="player-modal" id="playerModal">
+    <div class="modal-topbar">
+      <div class="modal-title-group">
+        <button class="modal-close-btn" onclick="closePlayer()" title="Đóng (ESC)">←</button>
+        <div class="video-badge-icon">▶</div>
+        <div class="modal-title" id="modalTitle">Bài giảng</div>
+      </div>
+
+      <div class="modal-actions">
+        <button class="modal-action-btn" id="modalStarBtn" onclick="toggleCurrentStar()">
+          ☆ Gắn dấu sao
+        </button>
+        <a class="modal-action-btn" id="modalTgLink" href="#" target="_blank" rel="noopener">
+          Mở trong Telegram ↗
+        </a>
+      </div>
+    </div>
+
+    <div class="modal-stage" onclick="handleStageClick(event)">
+      <button class="nav-arrow prev" onclick="playAdjacent(-1)" title="Bài trước (Phím ←)">❮</button>
+
+      <div class="video-container">
+        <video
+          id="videoPlayer"
+          controls
+          autoplay
+          playsinline
+          referrerpolicy="no-referrer"
+        ></video>
+
+        <div class="modal-bottom-info">
+          <div class="stream-status" id="streamStatus">Đang chuẩn bị luồng phát...</div>
+          <div class="video-caption" id="modalCaption"></div>
+        </div>
+      </div>
+
+      <button class="nav-arrow next" onclick="playAdjacent(1)" title="Bài tiếp theo (Phím →)">❯</button>
+    </div>
+  </div>
 
   <script>
     let allItems = [];
@@ -142,14 +832,55 @@
     let channelName = "spankbanggggg";
     let currentId = null;
 
-    const listEl = document.getElementById("lectureList");
-    const mainEl = document.getElementById("mainContent");
-    const loadMoreBtn = document.getElementById("loadMoreBtn");
+    let activeTab = "all"; // all | recent | starred
+    let durationFilter = "all"; // all | short | long
+    let sortDesc = true;
+    let viewMode = "grid"; // grid | list
+
+    let starredIds = new Set(JSON.parse(localStorage.getItem("tg_starred_ids") || "[]"));
+    let recentIds = JSON.parse(localStorage.getItem("tg_recent_ids") || "[]");
+
     const searchInput = document.getElementById("searchInput");
+    const clearSearchBtn = document.getElementById("clearSearchBtn");
+    const loadMoreBtn = document.getElementById("loadMoreBtn");
+    const loadMoreText = document.getElementById("loadMoreText");
+    const contentContainer = document.getElementById("contentContainer");
+    const playerModal = document.getElementById("playerModal");
+    const videoPlayer = document.getElementById("videoPlayer");
+    const streamStatus = document.getElementById("streamStatus");
+
+    function parseSeconds(dur) {
+      if (!dur) return 0;
+      const parts = dur.split(":").map(Number);
+      if (parts.length === 3) return parts[0] * 3600 + parts[1] * 60 + parts[2];
+      if (parts.length === 2) return parts[0] * 60 + parts[1];
+      return parts[0] || 0;
+    }
+
+    function saveStorage() {
+      localStorage.setItem("tg_starred_ids", JSON.stringify([...starredIds]));
+      localStorage.setItem("tg_recent_ids", JSON.stringify(recentIds.slice(0, 50)));
+      updateSidebarCounts();
+    }
+
+    function updateSidebarCounts() {
+      document.getElementById("countAll").textContent = allItems.length;
+      document.getElementById("countRecent").textContent = recentIds.filter((id) =>
+        allItems.some((i) => i.id === id)
+      ).length;
+      document.getElementById("countStarred").textContent = [...starredIds].filter((id) =>
+        allItems.some((i) => i.id === id)
+      ).length;
+      document.getElementById("loadedSummary").textContent =
+        "Đã tải " + allItems.length + " bài giảng trên trang";
+      const chLink = document.getElementById("channelLink");
+      chLink.href = "https://t.me/" + channelName;
+      chLink.textContent = "@" + channelName;
+    }
 
     async function fetchLectures(before = 0) {
       loadMoreBtn.disabled = true;
-      loadMoreBtn.textContent = "Đang tải...";
+      loadMoreText.textContent = "Đang tải...";
       try {
         const res = await fetch("/api/lectures" + (before ? "?before=" + before : ""));
         const data = await res.json();
@@ -162,96 +893,290 @@
 
         const existingIds = new Set(allItems.map((i) => i.id));
         for (const item of data.items || []) {
-          if (!existingIds.has(item.id)) allItems.push(item);
+          if (!existingIds.has(item.id)) {
+            allItems.push(item);
+          }
         }
 
-        renderList();
+        updateSidebarCounts();
+        renderContent();
 
-        if (!currentId && allItems.length) {
-          const hashId = Number(location.hash.replace("#", ""));
-          const found = allItems.find((i) => i.id === hashId) || allItems[0];
-          selectLecture(found.id);
+        // Nếu trên URL có sẵn #ID thì mở luôn bài đó
+        const hashId = Number(location.hash.replace("#", ""));
+        if (hashId && !currentId) {
+          const target = allItems.find((i) => i.id === hashId);
+          if (target) openLecture(target.id);
         }
       } catch (err) {
-        mainEl.innerHTML =
-          '<h1 style="color:#ff7b7b">Lỗi tải danh sách bài giảng</h1>' +
-          '<p style="margin-top:10px;color:#ffb3b3">' + escapeHtml(err.message) + "</p>";
+        contentContainer.innerHTML =
+          '<div class="empty-state" style="color:#d93025">' +
+          "<h3>Không thể tải danh sách bài giảng</h3>" +
+          '<p style="margin-top:8px">' + escapeHtml(err.message) + "</p></div>";
       } finally {
         loadMoreBtn.disabled = !nextBefore;
-        loadMoreBtn.textContent = nextBefore ? "Tải thêm bài cũ" : "Đã hết bài";
+        loadMoreText.textContent = nextBefore ? "Tải thêm bài cũ" : "Đã tải hết bài";
       }
     }
 
-    function renderList() {
+    function getFilteredItems() {
       const q = searchInput.value.trim().toLowerCase();
-      const filtered = allItems.filter(
-        (i) => i.title.toLowerCase().includes(q) || String(i.id).includes(q)
-      );
+      let list = allItems.slice();
 
-      listEl.innerHTML = filtered
-        .map((item) => {
-          const dateStr = item.date ? item.date.slice(0, 10) : "";
-          const activeClass = item.id === currentId ? "active" : "";
-          return (
-            '<div class="lecture-item ' + activeClass + '" onclick="selectLecture(' + item.id + ')">' +
-              '<div class="lecture-title">' + escapeHtml(item.title) + "</div>" +
-              '<div class="lecture-meta">' + escapeHtml(item.duration) + " " + escapeHtml(dateStr) + "</div>" +
-            "</div>"
-          );
-        })
-        .join("");
+      if (activeTab === "recent") {
+        const recentMap = new Map(allItems.map((i) => [i.id, i]));
+        list = recentIds.map((id) => recentMap.get(id)).filter(Boolean);
+      } else if (activeTab === "starred") {
+        list = list.filter((i) => starredIds.has(i.id));
+      }
+
+      if (q) {
+        list = list.filter(
+          (i) =>
+            i.title.toLowerCase().includes(q) ||
+            (i.text && i.text.toLowerCase().includes(q)) ||
+            String(i.id).includes(q)
+        );
+      }
+
+      if (durationFilter === "short") {
+        list = list.filter((i) => parseSeconds(i.duration) < 300);
+      } else if (durationFilter === "long") {
+        list = list.filter((i) => parseSeconds(i.duration) >= 300);
+      }
+
+      if (activeTab !== "recent") {
+        list.sort((a, b) => (sortDesc ? b.id - a.id : a.id - b.id));
+      }
+
+      return list;
     }
 
-    function selectLecture(id) {
+    function renderContent() {
+      const items = getFilteredItems();
+
+      if (!items.length) {
+        contentContainer.innerHTML =
+          '<div class="empty-state">Không tìm thấy bài giảng nào phù hợp.</div>';
+        return;
+      }
+
+      if (viewMode === "grid") {
+        contentContainer.innerHTML =
+          '<div class="section-label">Tệp bài giảng (' + items.length + ")</div>" +
+          '<div class="drive-grid">' +
+          items
+            .map((item) => {
+              const dateStr = item.date ? item.date.slice(0, 10) : "";
+              const isStar = starredIds.has(item.id);
+              const isPlaying = item.id === currentId && playerModal.classList.contains("open");
+              return (
+                '<div class="drive-card ' + (isPlaying ? "playing" : "") + '" onclick="openLecture(' + item.id + ')">' +
+                  '<div class="card-header">' +
+                    '<div class="card-title-wrap">' +
+                      '<span class="video-badge-icon">▶</span>' +
+                      '<span class="card-title" title="' + escapeHtml(item.title) + '">' + escapeHtml(item.title) + "</span>" +
+                    "</div>" +
+                    '<button class="star-btn ' + (isStar ? "starred" : "") + '" onclick="toggleStar(event, ' + item.id + ')" title="Gắn dấu sao">' +
+                      (isStar ? "★" : "☆") +
+                    "</button>" +
+                  "</div>" +
+                  '<div class="card-thumb-box">' +
+                    (item.thumb
+                      ? '<img class="card-thumb-img" src="' + item.thumb + '" alt="" loading="lazy" referrerpolicy="no-referrer" />'
+                      : '<div class="thumb-placeholder">🎬</div>') +
+                    '<div class="play-overlay">▶</div>' +
+                    (item.duration ? '<span class="duration-pill">' + escapeHtml(item.duration) + "</span>" : "") +
+                  "</div>" +
+                  '<div class="card-footer">' +
+                    "<span>Mã #" + item.id + "</span>" +
+                    "<span>" + escapeHtml(dateStr) + "</span>" +
+                  "</div>" +
+                "</div>"
+              );
+            })
+            .join("") +
+          "</div>";
+      } else {
+        contentContainer.innerHTML =
+          '<table class="drive-list">' +
+            "<thead><tr>" +
+              "<th>Tên bài giảng</th>" +
+              "<th>Mã bài</th>" +
+              "<th>Thời lượng</th>" +
+              "<th>Ngày đăng</th>" +
+              "<th>Dấu sao</th>" +
+            "</tr></thead>" +
+            "<tbody>" +
+              items
+                .map((item) => {
+                  const dateStr = item.date ? item.date.slice(0, 10) : "";
+                  const isStar = starredIds.has(item.id);
+                  return (
+                    '<tr onclick="openLecture(' + item.id + ')">' +
+                      '<td><div class="card-title-wrap"><span class="video-badge-icon">▶</span><span>' + escapeHtml(item.title) + "</span></div></td>" +
+                      "<td>#" + item.id + "</td>" +
+                      "<td>" + escapeHtml(item.duration || "--:--") + "</td>" +
+                      "<td>" + escapeHtml(dateStr) + "</td>" +
+                      '<td><button class="star-btn ' + (isStar ? "starred" : "") + '" onclick="toggleStar(event, ' + item.id + ')">' + (isStar ? "★" : "☆") + "</button></td>" +
+                    "</tr>"
+                  );
+                })
+                .join("") +
+            "</tbody>" +
+          "</table>";
+      }
+    }
+
+    function openLecture(id) {
       const item = allItems.find((i) => i.id === id);
       if (!item) return;
 
       currentId = id;
       location.hash = "#" + id;
-      renderList();
+
+      // Lưu vào danh sách xem gần đây
+      recentIds = [id, ...recentIds.filter((r) => r !== id)];
+      saveStorage();
+      renderContent();
 
       const streamUrl = item.streamUrl || ("/api/stream?id=" + item.id);
       const initialSrc = item.directUrl || streamUrl;
-      const modeText = item.directUrl
+
+      document.getElementById("modalTitle").textContent = item.title;
+      document.getElementById("modalCaption").textContent = item.text || "";
+      document.getElementById("modalTgLink").href =
+        "https://t.me/" + channelName + "/" + item.id;
+      updateModalStarButton();
+
+      streamStatus.style.color = "#a8c7fa";
+      streamStatus.textContent = item.directUrl
         ? "Đang phát trực tiếp qua Telegram CDN"
         : "Đang kết nối luồng MTProto Stream (video dung lượng lớn, chờ 2-4 giây)...";
 
-      mainEl.innerHTML =
-        "<h1>" + escapeHtml(item.title) + "</h1>" +
-        '<div class="player-wrapper">' +
-          '<video id="videoPlayer" src="' + initialSrc + '" poster="' + (item.thumb || "") + '" controls autoplay playsinline referrerpolicy="no-referrer"></video>' +
-        "</div>" +
-        '<div class="status-badge" id="streamStatus">' + modeText + "</div>" +
-        (item.text ? '<div class="lecture-desc">' + escapeHtml(item.text) + "</div>" : "") +
-        '<div><a class="tg-link" href="https://t.me/' + channelName + "/" + item.id + '" target="_blank" rel="noopener">Mở trong Telegram</a></div>';
+      playerModal.classList.add("open");
+      videoPlayer.poster = item.thumb || "";
+      videoPlayer.src = initialSrc;
+      videoPlayer.play().catch(() => {});
 
-      const videoEl = document.getElementById("videoPlayer");
-      const statusEl = document.getElementById("streamStatus");
-
-      videoEl.onloadeddata = () => {
-        statusEl.style.color = "#6be6a8";
-        statusEl.textContent = "Đang phát bài giảng #" + item.id;
+      videoPlayer.onloadeddata = () => {
+        streamStatus.style.color = "#81c995";
+        streamStatus.textContent = "Đang phát bài giảng #" + item.id + " (" + (item.duration || "") + ")";
       };
 
-      videoEl.onerror = async () => {
-        if (!videoEl.src.includes("/api/stream")) {
-          statusEl.textContent = "Đang chuyển sang luồng MTProto Stream...";
-          videoEl.src = streamUrl;
-          videoEl.play().catch(() => {});
+      videoPlayer.onerror = async () => {
+        if (!videoPlayer.src.includes("/api/stream")) {
+          streamStatus.style.color = "#fde293";
+          streamStatus.textContent = "Đang chuyển sang luồng MTProto Stream...";
+          videoPlayer.src = streamUrl;
+          videoPlayer.play().catch(() => {});
           return;
         }
         try {
           const r = await fetch(streamUrl, { headers: { Range: "bytes=0-1023" } });
           if (!r.ok) {
             const errData = await r.json().catch(() => ({}));
-            statusEl.style.color = "#ff7b7b";
-            statusEl.textContent = "Lỗi Stream: " + (errData.error || "HTTP " + r.status);
+            streamStatus.style.color = "#f28b82";
+            streamStatus.textContent =
+              "Lỗi Stream: " + (errData.error || "HTTP " + r.status);
           }
         } catch (err) {
-          statusEl.style.color = "#ff7b7b";
-          statusEl.textContent = "Lỗi kết nối Stream: " + err.message;
+          streamStatus.style.color = "#f28b82";
+          streamStatus.textContent = "Lỗi kết nối Stream: " + err.message;
         }
       };
+    }
+
+    function closePlayer() {
+      videoPlayer.pause();
+      videoPlayer.removeAttribute("src");
+      videoPlayer.load();
+      playerModal.classList.remove("open");
+      history.replaceState(null, "", location.pathname + location.search);
+      renderContent();
+    }
+
+    function handleStageClick(e) {
+      if (e.target.classList.contains("modal-stage")) {
+        closePlayer();
+      }
+    }
+
+    function playAdjacent(step) {
+      const list = getFilteredItems();
+      const idx = list.findIndex((i) => i.id === currentId);
+      if (idx === -1) return;
+      const nextItem = list[idx + step];
+      if (nextItem) openLecture(nextItem.id);
+    }
+
+    function toggleStar(e, id) {
+      e.stopPropagation();
+      if (starredIds.has(id)) {
+        starredIds.delete(id);
+      } else {
+        starredIds.add(id);
+      }
+      saveStorage();
+      renderContent();
+      if (currentId === id) updateModalStarButton();
+    }
+
+    function toggleCurrentStar() {
+      if (!currentId) return;
+      if (starredIds.has(currentId)) {
+        starredIds.delete(currentId);
+      } else {
+        starredIds.add(currentId);
+      }
+      saveStorage();
+      renderContent();
+      updateModalStarButton();
+    }
+
+    function updateModalStarButton() {
+      const btn = document.getElementById("modalStarBtn");
+      const isStar = starredIds.has(currentId);
+      btn.textContent = isStar ? "★ Đã gắn sao" : "☆ Gắn dấu sao";
+      btn.style.color = isStar ? "#fbbc04" : "#ffffff";
+    }
+
+    function switchTab(tab) {
+      activeTab = tab;
+      document.querySelectorAll(".nav-item").forEach((el) => {
+        el.classList.toggle("active", el.dataset.tab === tab);
+      });
+      const titles = {
+        all: "Drive của tôi",
+        recent: "Xem gần đây",
+        starred: "Có gắn dấu sao",
+      };
+      document.getElementById("workspaceTitle").textContent = titles[tab] || "Drive của tôi";
+      renderContent();
+    }
+
+    function setDurationFilter(filter) {
+      durationFilter = filter;
+      document.querySelectorAll(".chip[data-duration]").forEach((el) => {
+        el.classList.toggle("active", el.dataset.duration === filter);
+      });
+      renderContent();
+    }
+
+    function toggleSortOrder() {
+      sortDesc = !sortDesc;
+      document.getElementById("sortChip").textContent =
+        "Sắp xếp: " + (sortDesc ? "Mới nhất ↓" : "Cũ nhất ↑");
+      renderContent();
+    }
+
+    function setViewMode(mode) {
+      viewMode = mode;
+      const isGrid = mode === "grid";
+      document.getElementById("gridViewBtn").classList.toggle("active", isGrid);
+      document.getElementById("listViewBtn").classList.toggle("active", !isGrid);
+      document.getElementById("gridViewBtn").textContent = isGrid ? "✓ ⊞" : "⊞";
+      document.getElementById("listViewBtn").textContent = !isGrid ? "✓ ☰" : "☰";
+      renderContent();
     }
 
     function escapeHtml(s) {
@@ -262,13 +1187,26 @@
         .replace(/"/g, "&quot;");
     }
 
-    searchInput.addEventListener("input", renderList);
+    searchInput.addEventListener("input", () => {
+      clearSearchBtn.style.display = searchInput.value ? "block" : "none";
+      renderContent();
+    });
+
+    clearSearchBtn.addEventListener("click", () => {
+      searchInput.value = "";
+      clearSearchBtn.style.display = "none";
+      renderContent();
+    });
+
     loadMoreBtn.addEventListener("click", () => {
       if (nextBefore) fetchLectures(nextBefore);
     });
-    window.addEventListener("hashchange", () => {
-      const id = Number(location.hash.replace("#", ""));
-      if (id && id !== currentId) selectLecture(id);
+
+    window.addEventListener("keydown", (e) => {
+      if (!playerModal.classList.contains("open")) return;
+      if (e.key === "Escape") closePlayer();
+      if (e.key === "ArrowLeft") playAdjacent(-1);
+      if (e.key === "ArrowRight") playAdjacent(1);
     });
 
     fetchLectures();
