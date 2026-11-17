@@ -2,7 +2,7 @@
 <html lang="vi">
 <head>
   <meta charset="UTF-8" />
-  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover" />
   <title>Drive Bài Giảng</title>
   <style>
     :root {
@@ -19,49 +19,53 @@
       --accent-red: #d93025;
       --border-color: #dadce0;
       --chip-border: #747775;
+      --safe-bottom: env(safe-area-inset-bottom, 0px);
     }
 
     * {
       box-sizing: border-box;
       margin: 0;
       padding: 0;
+      -webkit-tap-highlight-color: transparent;
     }
 
     body {
-      font-family: "Google Sans", Roboto, system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+      font-family: -apple-system, BlinkMacSystemFont, "Google Sans", Roboto, "Segoe UI", sans-serif;
       background: var(--bg-shell);
       color: var(--text-primary);
       height: 100vh;
+      height: 100dvh;
       display: flex;
       flex-direction: column;
       overflow: hidden;
+      -webkit-font-smoothing: antialiased;
     }
 
     /* Top Header */
     .topbar {
-      height: 64px;
+      height: 60px;
       display: flex;
       align-items: center;
-      padding: 8px 20px 8px 16px;
-      gap: 20px;
+      padding: 8px 16px;
+      gap: 14px;
       flex-shrink: 0;
     }
 
     .brand {
-      width: 232px;
+      width: 224px;
       display: flex;
       align-items: center;
-      gap: 12px;
-      font-size: 22px;
+      gap: 10px;
+      font-size: 20px;
       color: var(--text-secondary);
-      font-weight: 500;
+      font-weight: 600;
       user-select: none;
       flex-shrink: 0;
     }
 
     .brand-icon {
-      width: 36px;
-      height: 36px;
+      width: 34px;
+      height: 34px;
       border-radius: 8px;
       background: linear-gradient(135deg, #1a73e8, #34a853, #fbbc04, #ea4335);
       display: flex;
@@ -69,7 +73,8 @@
       justify-content: center;
       color: #fff;
       font-weight: 700;
-      font-size: 18px;
+      font-size: 16px;
+      flex-shrink: 0;
     }
 
     .search-wrapper {
@@ -82,39 +87,55 @@
 
     .search-icon {
       position: absolute;
-      left: 16px;
+      left: 14px;
       color: var(--text-secondary);
       pointer-events: none;
-      font-size: 16px;
+      font-size: 15px;
     }
 
     .search-input {
       width: 100%;
-      height: 46px;
-      padding: 0 42px 0 46px;
+      height: 44px;
+      padding: 0 38px 0 40px;
       border-radius: 999px;
       border: none;
       background: var(--bg-search);
-      font-size: 15px;
+      font-size: 16px; /* 16px chống iOS Safari tự zoom khi bấm vào ô tìm kiếm */
       color: var(--text-primary);
       outline: none;
-      transition: background 0.2s, box-shadow 0.2s;
     }
 
     .search-input:focus {
       background: #ffffff;
-      box-shadow: 0 1px 6px rgba(32, 33, 36, 0.28);
+      box-shadow: 0 1px 6px rgba(32, 33, 36, 0.22);
     }
 
     .clear-search {
       position: absolute;
-      right: 14px;
+      right: 10px;
+      width: 28px;
+      height: 28px;
       background: none;
       border: none;
       cursor: pointer;
       color: var(--text-secondary);
-      font-size: 18px;
+      font-size: 16px;
       display: none;
+    }
+
+    /* Mobile Sync Pill trên Topbar */
+    .mobile-sync-badge {
+      display: none;
+      align-items: center;
+      gap: 6px;
+      background: #fff;
+      border: 1px solid var(--border-color);
+      padding: 6px 10px;
+      border-radius: 999px;
+      font-size: 12px;
+      font-weight: 600;
+      color: var(--text-secondary);
+      flex-shrink: 0;
     }
 
     /* App Layout */
@@ -125,9 +146,9 @@
       padding: 0 16px 16px 0;
     }
 
-    /* Left Sidebar */
+    /* Left Sidebar (Desktop) */
     .sidebar {
-      width: 248px;
+      width: 240px;
       padding: 4px 12px 16px 12px;
       display: flex;
       flex-direction: column;
@@ -145,12 +166,12 @@
       border-radius: 16px;
       font-size: 13px;
       font-weight: 500;
-      box-shadow: 0 1px 3px 0 rgba(60, 64, 67, 0.2), 0 4px 8px 3px rgba(60, 64, 67, 0.1);
+      box-shadow: 0 1px 3px rgba(60, 64, 67, 0.2);
     }
 
     .sync-dot {
-      width: 10px;
-      height: 10px;
+      width: 9px;
+      height: 9px;
       border-radius: 50%;
       background: #1a73e8;
       flex-shrink: 0;
@@ -163,32 +184,27 @@
     }
 
     @keyframes pulse {
-      0%, 100% { transform: scale(0.85); opacity: 0.5; }
-      50% { transform: scale(1.2); opacity: 1; }
+      0%, 100% { opacity: 0.4; }
+      50% { opacity: 1; }
     }
 
     .nav-list {
       display: flex;
       flex-direction: column;
-      gap: 2px;
+      gap: 4px;
     }
 
     .nav-item {
       display: flex;
       align-items: center;
       justify-content: space-between;
-      height: 36px;
+      height: 38px;
       padding: 0 16px;
       border-radius: 999px;
       font-size: 14px;
       color: var(--text-secondary);
       cursor: pointer;
       user-select: none;
-      transition: background 0.15s;
-    }
-
-    .nav-item:hover {
-      background: #e8ebee;
     }
 
     .nav-item.active {
@@ -235,11 +251,12 @@
     }
 
     .workspace-header {
-      padding: 16px 24px 12px 24px;
+      padding: 14px 20px 10px 20px;
       display: flex;
       flex-direction: column;
-      gap: 12px;
+      gap: 10px;
       border-bottom: 1px solid #f1f3f4;
+      flex-shrink: 0;
     }
 
     .workspace-top-row {
@@ -249,8 +266,8 @@
     }
 
     .workspace-title {
-      font-size: 22px;
-      font-weight: 400;
+      font-size: 20px;
+      font-weight: 500;
       color: var(--text-primary);
     }
 
@@ -265,13 +282,13 @@
     .view-btn {
       border: none;
       background: transparent;
-      padding: 0 14px;
+      padding: 0 12px;
       font-size: 13px;
       cursor: pointer;
       color: var(--text-secondary);
       display: flex;
       align-items: center;
-      gap: 6px;
+      gap: 4px;
     }
 
     .view-btn.active {
@@ -280,12 +297,20 @@
       font-weight: 600;
     }
 
-    /* Filter Chips */
+    /* Filter Chips (Vuốt ngang mượt trên iPhone) */
     .chips-row {
       display: flex;
       align-items: center;
       gap: 8px;
-      flex-wrap: wrap;
+      overflow-x: auto;
+      white-space: nowrap;
+      scrollbar-width: none;
+      -ms-overflow-style: none;
+      padding-bottom: 2px;
+    }
+
+    .chips-row::-webkit-scrollbar {
+      display: none;
     }
 
     .chip {
@@ -301,11 +326,7 @@
       display: inline-flex;
       align-items: center;
       gap: 6px;
-      transition: background 0.15s;
-    }
-
-    .chip:hover {
-      background: #f1f3f4;
+      flex-shrink: 0;
     }
 
     .chip.active {
@@ -318,11 +339,12 @@
     .content-scroll {
       flex: 1;
       overflow-y: auto;
-      padding: 16px 24px 32px 24px;
+      -webkit-overflow-scrolling: touch;
+      padding: 14px 20px 32px 20px;
     }
 
     .section-label {
-      font-size: 14px;
+      font-size: 13px;
       font-weight: 500;
       color: var(--text-secondary);
       margin-bottom: 12px;
@@ -331,23 +353,35 @@
     /* Grid View (Drive Card Style) */
     .drive-grid {
       display: grid;
-      grid-template-columns: repeat(auto-fill, minmax(235px, 1fr));
-      gap: 16px;
+      grid-template-columns: repeat(auto-fill, minmax(225px, 1fr));
+      gap: 14px;
     }
 
     .drive-card {
       background: var(--bg-card);
       border-radius: 12px;
-      padding: 10px 12px 12px 12px;
+      padding: 10px;
       cursor: pointer;
-      transition: background 0.15s, box-shadow 0.15s;
       display: flex;
       flex-direction: column;
       gap: 8px;
       user-select: none;
+      contain: layout style;
     }
 
-    .drive-card:hover {
+    @media (hover: hover) {
+      .drive-card:hover {
+        background: var(--bg-card-hover);
+      }
+      .nav-item:hover {
+        background: #e8ebee;
+      }
+      .drive-card:hover .play-overlay {
+        opacity: 1;
+      }
+    }
+
+    .drive-card:active {
       background: var(--bg-card-hover);
     }
 
@@ -360,33 +394,33 @@
       display: flex;
       align-items: center;
       justify-content: space-between;
-      gap: 8px;
-      height: 28px;
+      gap: 6px;
+      height: 24px;
     }
 
     .card-title-wrap {
       display: flex;
       align-items: center;
-      gap: 10px;
+      gap: 8px;
       overflow: hidden;
       flex: 1;
     }
 
     .video-badge-icon {
-      width: 20px;
-      height: 20px;
+      width: 18px;
+      height: 18px;
       border-radius: 4px;
       background: var(--accent-red);
       color: #fff;
       display: inline-flex;
       align-items: center;
       justify-content: center;
-      font-size: 10px;
+      font-size: 9px;
       flex-shrink: 0;
     }
 
     .card-title {
-      font-size: 13.5px;
+      font-size: 13px;
       font-weight: 500;
       color: var(--text-primary);
       white-space: nowrap;
@@ -401,12 +435,8 @@
       font-size: 17px;
       color: var(--text-muted);
       padding: 4px;
-      border-radius: 50%;
       line-height: 1;
-    }
-
-    .star-btn:hover {
-      background: rgba(0, 0, 0, 0.08);
+      flex-shrink: 0;
     }
 
     .star-btn.starred {
@@ -430,54 +460,44 @@
       height: 100%;
       object-fit: cover;
       display: block;
-      transition: transform 0.25s;
-    }
-
-    .drive-card:hover .card-thumb-img {
-      transform: scale(1.03);
     }
 
     .thumb-placeholder {
       color: rgba(255, 255, 255, 0.7);
-      font-size: 32px;
+      font-size: 26px;
     }
 
     .duration-pill {
       position: absolute;
-      bottom: 8px;
-      right: 8px;
+      bottom: 6px;
+      right: 6px;
       background: rgba(0, 0, 0, 0.78);
       color: #fff;
-      font-size: 11.5px;
+      font-size: 11px;
       font-weight: 500;
-      padding: 2px 6px;
+      padding: 2px 5px;
       border-radius: 4px;
     }
 
     .play-overlay {
       position: absolute;
-      width: 44px;
-      height: 44px;
+      width: 40px;
+      height: 40px;
       border-radius: 50%;
       background: rgba(0, 0, 0, 0.6);
       color: #fff;
       display: flex;
       align-items: center;
       justify-content: center;
-      font-size: 18px;
+      font-size: 16px;
       opacity: 0;
-      transition: opacity 0.15s;
-    }
-
-    .drive-card:hover .play-overlay {
-      opacity: 1;
     }
 
     .card-footer {
       display: flex;
       align-items: center;
       justify-content: space-between;
-      font-size: 11.5px;
+      font-size: 11px;
       color: var(--text-muted);
       padding: 0 2px;
     }
@@ -490,38 +510,87 @@
 
     .drive-list th {
       text-align: left;
-      font-size: 13px;
+      font-size: 12px;
       font-weight: 500;
       color: var(--text-secondary);
-      padding: 10px 12px;
+      padding: 10px 8px;
       border-bottom: 1px solid var(--border-color);
     }
 
     .drive-list td {
-      padding: 10px 12px;
+      padding: 10px 8px;
       border-bottom: 1px solid #f1f3f4;
-      font-size: 14px;
+      font-size: 13.5px;
       color: var(--text-primary);
     }
 
     .drive-list tr {
       cursor: pointer;
-      transition: background 0.12s;
     }
 
-    .drive-list tbody tr:hover {
-      background: var(--bg-card);
+    .scroll-sentinel {
+      height: 40px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      color: var(--text-muted);
+      font-size: 13px;
+      margin-top: 12px;
+    }
+
+    /* Bottom Navigation Bar cho iPhone / Mobile */
+    .mobile-bottom-nav {
+      display: none;
+      background: #ffffff;
+      border-top: 1px solid var(--border-color);
+      padding: 6px 8px calc(6px + var(--safe-bottom)) 8px;
+      justify-content: space-around;
+      align-items: center;
+      flex-shrink: 0;
+      z-index: 50;
+    }
+
+    .mob-nav-btn {
+      flex: 1;
+      border: none;
+      background: none;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      gap: 3px;
+      padding: 4px 0;
+      color: var(--text-secondary);
+      font-size: 11px;
+      font-weight: 500;
+      cursor: pointer;
+    }
+
+    .mob-nav-pill {
+      padding: 3px 18px;
+      border-radius: 999px;
+      font-size: 16px;
+      line-height: 1.2;
+    }
+
+    .mob-nav-btn.active {
+      color: #001d35;
+      font-weight: 600;
+    }
+
+    .mob-nav-btn.active .mob-nav-pill {
+      background: var(--bg-active-pill);
     }
 
     /* Video Player Modal */
     .player-modal {
       position: fixed;
       inset: 0;
-      background: rgba(15, 18, 22, 0.9);
+      background: rgba(12, 14, 18, 0.96);
       z-index: 1000;
       display: none;
       flex-direction: column;
       color: #fff;
+      padding-bottom: var(--safe-bottom);
     }
 
     .player-modal.open {
@@ -529,19 +598,22 @@
     }
 
     .modal-topbar {
-      height: 60px;
-      padding: 0 20px;
+      height: 56px;
+      padding: 0 14px;
       display: flex;
       align-items: center;
       justify-content: space-between;
-      background: rgba(0, 0, 0, 0.45);
+      gap: 10px;
+      background: rgba(0, 0, 0, 0.5);
+      flex-shrink: 0;
     }
 
     .modal-title-group {
       display: flex;
       align-items: center;
-      gap: 12px;
+      gap: 10px;
       overflow: hidden;
+      flex: 1;
     }
 
     .modal-close-btn {
@@ -556,14 +628,11 @@
       display: flex;
       align-items: center;
       justify-content: center;
-    }
-
-    .modal-close-btn:hover {
-      background: rgba(255, 255, 255, 0.12);
+      flex-shrink: 0;
     }
 
     .modal-title {
-      font-size: 16px;
+      font-size: 15px;
       font-weight: 500;
       white-space: nowrap;
       overflow: hidden;
@@ -573,25 +642,23 @@
     .modal-actions {
       display: flex;
       align-items: center;
-      gap: 10px;
+      gap: 8px;
+      flex-shrink: 0;
     }
 
     .modal-action-btn {
-      padding: 8px 14px;
+      padding: 7px 12px;
       border-radius: 999px;
       border: 1px solid rgba(255, 255, 255, 0.25);
-      background: rgba(255, 255, 255, 0.1);
+      background: rgba(255, 255, 255, 0.12);
       color: #fff;
       text-decoration: none;
-      font-size: 13px;
+      font-size: 12.5px;
       cursor: pointer;
       display: inline-flex;
       align-items: center;
-      gap: 6px;
-    }
-
-    .modal-action-btn:hover {
-      background: rgba(255, 255, 255, 0.2);
+      gap: 5px;
+      white-space: nowrap;
     }
 
     .modal-stage {
@@ -600,7 +667,7 @@
       align-items: center;
       justify-content: center;
       position: relative;
-      padding: 12px 64px;
+      padding: 12px 56px;
       overflow: hidden;
     }
 
@@ -612,7 +679,7 @@
       height: 44px;
       border-radius: 50%;
       border: none;
-      background: rgba(255, 255, 255, 0.14);
+      background: rgba(255, 255, 255, 0.16);
       color: #fff;
       font-size: 20px;
       cursor: pointer;
@@ -621,16 +688,12 @@
       justify-content: center;
     }
 
-    .nav-arrow:hover {
-      background: rgba(255, 255, 255, 0.28);
-    }
-
-    .nav-arrow.prev { left: 16px; }
-    .nav-arrow.next { right: 16px; }
+    .nav-arrow.prev { left: 12px; }
+    .nav-arrow.next { right: 12px; }
 
     .video-container {
       width: 100%;
-      max-width: 1020px;
+      max-width: 1000px;
       display: flex;
       flex-direction: column;
       align-items: center;
@@ -638,47 +701,151 @@
 
     video {
       width: 100%;
-      max-height: 74vh;
+      max-height: 70vh;
       background: #000;
-      border-radius: 12px;
-      box-shadow: 0 12px 40px rgba(0, 0, 0, 0.6);
+      border-radius: 10px;
     }
 
     .modal-bottom-info {
       width: 100%;
-      max-width: 1020px;
+      max-width: 1000px;
       margin-top: 12px;
       display: flex;
       flex-direction: column;
-      gap: 6px;
+      gap: 8px;
+    }
+
+    .mobile-player-nav {
+      display: none;
+      justify-content: space-between;
+      gap: 10px;
+      width: 100%;
+      margin-top: 4px;
+    }
+
+    .mobile-player-nav button {
+      flex: 1;
+      height: 40px;
+      border-radius: 10px;
+      border: 1px solid rgba(255, 255, 255, 0.22);
+      background: rgba(255, 255, 255, 0.12);
+      color: #fff;
+      font-size: 13.5px;
+      font-weight: 500;
     }
 
     .stream-status {
-      font-size: 13px;
+      font-size: 12.5px;
       color: #a8c7fa;
     }
 
     .video-caption {
-      font-size: 13.5px;
+      font-size: 13px;
       color: #e3e3e3;
-      max-height: 68px;
+      max-height: 64px;
       overflow-y: auto;
       white-space: pre-wrap;
-      line-height: 1.5;
+      line-height: 1.45;
     }
 
     .empty-state {
       text-align: center;
-      padding: 64px 20px;
+      padding: 56px 20px;
       color: var(--text-muted);
+      font-size: 14px;
     }
 
+    /* Tối ưu chuyên biệt cho màn hình iPhone / Điện thoại */
     @media (max-width: 768px) {
-      .sidebar { display: none; }
-      .brand { width: auto; }
-      .app-body { padding: 0 8px 8px 8px; }
-      .modal-stage { padding: 12px; }
-      .nav-arrow { display: none; }
+      .topbar {
+        height: 54px;
+        padding: 6px 10px;
+        gap: 8px;
+      }
+      .brand {
+        width: auto;
+      }
+      .brand span {
+        display: none;
+      }
+      .search-input {
+        height: 38px;
+        padding: 0 32px 0 34px;
+        font-size: 16px;
+      }
+      .search-icon {
+        left: 11px;
+        font-size: 14px;
+      }
+      .mobile-sync-badge {
+        display: inline-flex;
+      }
+      .sidebar {
+        display: none;
+      }
+      .app-body {
+        padding: 0;
+      }
+      .workspace {
+        border-radius: 16px 16px 0 0;
+        border-left: none;
+        border-right: none;
+        border-bottom: none;
+      }
+      .workspace-header {
+        padding: 10px 12px 8px 12px;
+        gap: 8px;
+      }
+      .workspace-title {
+        font-size: 17px;
+      }
+      .content-scroll {
+        padding: 10px 10px 24px 10px;
+      }
+      /* Lưới 2 cột chuẩn Google Drive iOS App trên iPhone 13 */
+      .drive-grid {
+        grid-template-columns: repeat(2, minmax(0, 1fr));
+        gap: 10px;
+      }
+      .drive-card {
+        padding: 8px;
+        gap: 6px;
+        border-radius: 10px;
+      }
+      .card-header {
+        height: 22px;
+      }
+      .card-title {
+        font-size: 12px;
+      }
+      .star-btn {
+        font-size: 15px;
+        padding: 2px;
+      }
+      .duration-pill {
+        font-size: 10px;
+        padding: 1px 4px;
+        bottom: 4px;
+        right: 4px;
+      }
+      .card-footer {
+        font-size: 10.5px;
+      }
+      .mobile-bottom-nav {
+        display: flex;
+      }
+      .modal-stage {
+        padding: 10px;
+      }
+      .nav-arrow {
+        display: none;
+      }
+      .mobile-player-nav {
+        display: flex;
+      }
+      .hide-on-mobile {
+        display: none;
+      }
     }
   </style>
 </head>
@@ -693,22 +860,28 @@
     <div class="search-wrapper">
       <span class="search-icon">🔍</span>
       <input
-        type="text"
+        type="search"
         id="searchInput"
         class="search-input"
-        placeholder="Tìm trong toàn bộ bài giảng (tên bài hoặc mã #ID)..."
+        placeholder="Tìm tên bài hoặc mã #ID..."
+        autocomplete="off"
       />
-      <button id="clearSearchBtn" class="clear-search" title="Xóa tìm kiếm">✕</button>
+      <button id="clearSearchBtn" class="clear-search" title="Xóa">✕</button>
+    </div>
+
+    <div class="mobile-sync-badge">
+      <span class="sync-dot" id="mobSyncDot"></span>
+      <span id="mobSyncText">0</span>
     </div>
   </header>
 
   <!-- Main Body -->
   <div class="app-body">
-    <!-- Left Sidebar -->
+    <!-- Left Sidebar (Desktop) -->
     <aside class="sidebar">
       <div class="sync-card">
         <span class="sync-dot" id="syncDot"></span>
-        <span id="syncText">Đang tải toàn bộ bài...</span>
+        <span id="syncText">Đang tải bài giảng...</span>
       </div>
 
       <nav class="nav-list">
@@ -752,10 +925,10 @@
           <h1 class="workspace-title" id="workspaceTitle">Drive của tôi</h1>
 
           <div class="view-toggle">
-            <button id="listViewBtn" class="view-btn" onclick="setViewMode('list')" title="Bố cục danh sách">
+            <button id="listViewBtn" class="view-btn" onclick="setViewMode('list')" title="Danh sách">
               ☰
             </button>
-            <button id="gridViewBtn" class="view-btn active" onclick="setViewMode('grid')" title="Bố cục lưới">
+            <button id="gridViewBtn" class="view-btn active" onclick="setViewMode('grid')" title="Lưới">
               ✓ ⊞
             </button>
           </div>
@@ -763,7 +936,7 @@
 
         <div class="chips-row">
           <button class="chip active" data-duration="all" onclick="setDurationFilter('all')">
-            Tất cả thời lượng
+            Tất cả
           </button>
           <button class="chip" data-duration="short" onclick="setDurationFilter('short')">
             ⚡ Dưới 5 phút
@@ -772,38 +945,57 @@
             🎬 Trên 5 phút
           </button>
           <button class="chip" id="sortChip" onclick="toggleSortOrder()">
-            Sắp xếp: Mới nhất ↓
+            Mới nhất ↓
           </button>
         </div>
       </div>
 
       <div class="content-scroll" id="contentContainer">
-        <div class="empty-state">Đang tải danh sách bài giảng...</div>
+        <div id="itemsMount">
+          <div class="empty-state">Đang tải danh sách bài giảng...</div>
+        </div>
+        <div id="scrollSentinel" class="scroll-sentinel"></div>
       </div>
     </main>
   </div>
+
+  <!-- Bottom Navigation Bar (iPhone / Mobile) -->
+  <nav class="mobile-bottom-nav">
+    <button class="mob-nav-btn active" data-tab="all" onclick="switchTab('all')">
+      <span class="mob-nav-pill">📁</span>
+      <span>Drive (<span id="mobCountAll">0</span>)</span>
+    </button>
+    <button class="mob-nav-btn" data-tab="recent" onclick="switchTab('recent')">
+      <span class="mob-nav-pill">🕒</span>
+      <span>Gần đây (<span id="mobCountRecent">0</span>)</span>
+    </button>
+    <button class="mob-nav-btn" data-tab="starred" onclick="switchTab('starred')">
+      <span class="mob-nav-pill">⭐</span>
+      <span>Dấu sao (<span id="mobCountStarred">0</span>)</span>
+    </button>
+  </nav>
 
   <!-- Video Player Modal -->
   <div class="player-modal" id="playerModal">
     <div class="modal-topbar">
       <div class="modal-title-group">
-        <button class="modal-close-btn" onclick="closePlayer()" title="Đóng (ESC)">←</button>
+        <button class="modal-close-btn" onclick="closePlayer()" title="Đóng">←</button>
         <div class="video-badge-icon">▶</div>
         <div class="modal-title" id="modalTitle">Bài giảng</div>
       </div>
 
       <div class="modal-actions">
         <button class="modal-action-btn" id="modalStarBtn" onclick="toggleCurrentStar()">
-          ☆ Gắn dấu sao
+          ☆ Sao
         </button>
         <a class="modal-action-btn" id="modalTgLink" href="#" target="_blank" rel="noopener">
-          Mở trong Telegram ↗
+          Telegram ↗
         </a>
       </div>
     </div>
 
     <div class="modal-stage" onclick="handleStageClick(event)">
-      <button class="nav-arrow prev" onclick="playAdjacent(-1)" title="Bài trước (Phím ←)">❮</button>
+      <button class="nav-arrow prev" onclick="playAdjacent(-1)">❮</button>
 
       <div class="video-container">
         <video
@@ -811,16 +1003,21 @@
           controls
           autoplay
           playsinline
+          webkit-playsinline
           referrerpolicy="no-referrer"
         ></video>
 
         <div class="modal-bottom-info">
+          <div class="mobile-player-nav">
+            <button onclick="playAdjacent(-1)">❮ Bài trước</button>
+            <button onclick="playAdjacent(1)">Bài tiếp theo ❯</button>
+          </div>
           <div class="stream-status" id="streamStatus">Đang chuẩn bị luồng phát...</div>
           <div class="video-caption" id="modalCaption"></div>
         </div>
       </div>
 
-      <button class="nav-arrow next" onclick="playAdjacent(1)" title="Bài tiếp theo (Phím →)">❯</button>
+      <button class="nav-arrow next" onclick="playAdjacent(1)">❯</button>
     </div>
   </div>
 
@@ -831,21 +1028,30 @@
     let currentId = null;
     let isSyncingDone = false;
 
-    let activeTab = "all"; // all | recent | starred
-    let durationFilter = "all"; // all | short | long
+    let activeTab = "all";
+    let durationFilter = "all";
     let sortDesc = true;
-    let viewMode = "grid"; // grid | list
+    let viewMode = "grid";
+
+    // Số lượng thẻ vẽ trên DOM mỗi nhịp để iPhone luôn mượt 60FPS
+    const PAGE_CHUNK = 48;
+    let currentFiltered = [];
+    let renderedCount = 0;
 
     let starredIds = new Set(JSON.parse(localStorage.getItem("tg_starred_ids") || "[]"));
     let recentIds = JSON.parse(localStorage.getItem("tg_recent_ids") || "[]");
 
-    const CACHE_KEY = "tg_all_lectures_cache_v1";
+    const CACHE_KEY = "tg_all_lectures_cache_v2";
 
     const searchInput = document.getElementById("searchInput");
     const clearSearchBtn = document.getElementById("clearSearchBtn");
     const syncDot = document.getElementById("syncDot");
     const syncText = document.getElementById("syncText");
+    const mobSyncDot = document.getElementById("mobSyncDot");
+    const mobSyncText = document.getElementById("mobSyncText");
     const contentContainer = document.getElementById("contentContainer");
+    const itemsMount = document.getElementById("itemsMount");
+    const scrollSentinel = document.getElementById("scrollSentinel");
     const playerModal = document.getElementById("playerModal");
     const videoPlayer = document.getElementById("videoPlayer");
     const streamStatus = document.getElementById("streamStatus");
@@ -865,29 +1071,32 @@
     }
 
     function updateSidebarCounts() {
-      document.getElementById("countAll").textContent = allItems.length;
-      document.getElementById("countRecent").textContent = recentIds.filter((id) =>
-        existingIds.has(id)
-      ).length;
-      document.getElementById("countStarred").textContent = [...starredIds].filter((id) =>
-        existingIds.has(id)
-      ).length;
+      const total = allItems.length;
+      const recentCount = recentIds.filter((id) => existingIds.has(id)).length;
+      const starCount = [...starredIds].filter((id) => existingIds.has(id)).length;
+
+      document.getElementById("countAll").textContent = total;
+      document.getElementById("countRecent").textContent = recentCount;
+      document.getElementById("countStarred").textContent = starCount;
+
+      document.getElementById("mobCountAll").textContent = total;
+      document.getElementById("mobCountRecent").textContent = recentCount;
+      document.getElementById("mobCountStarred").textContent = starCount;
+      mobSyncText.textContent = total + " bài";
 
       if (isSyncingDone) {
         syncDot.classList.add("done");
-        syncText.textContent = "Đã tải đủ " + allItems.length + " bài giảng";
+        mobSyncDot.classList.add("done");
+        syncText.textContent = "Đã tải đủ " + total + " bài";
         document.getElementById("loadedSummary").textContent =
-          "Hiển thị đầy đủ " + allItems.length + " bài giảng";
+          "Hiển thị đầy đủ " + total + " bài giảng";
       } else {
         syncDot.classList.remove("done");
-        syncText.textContent = "Đang tải tự động (" + allItems.length + " bài)...";
+        mobSyncDot.classList.remove("done");
+        syncText.textContent = "Đang đồng bộ (" + total + " bài)...";
         document.getElementById("loadedSummary").textContent =
-          "Đã tải " + allItems.length + " bài giảng...";
+          "Đã tải " + total + " bài giảng...";
       }
-
-      const chLink = document.getElementById("channelLink");
-      chLink.href = "https://t.me/" + channelName;
-      chLink.textContent = "@" + channelName;
     }
 
     function matchesCurrentFilter(item) {
@@ -918,21 +1127,21 @@
           '<div class="card-header">' +
             '<div class="card-title-wrap">' +
               '<span class="video-badge-icon">▶</span>' +
-              '<span class="card-title" title="' + escapeHtml(item.title) + '">' + escapeHtml(item.title) + "</span>" +
+              '<span class="card-title">' + escapeHtml(item.title) + "</span>" +
             "</div>" +
-            '<button class="star-btn ' + (isStar ? "starred" : "") + '" onclick="toggleStar(event, ' + item.id + ')" title="Gắn dấu sao">' +
+            '<button class="star-btn ' + (isStar ? "starred" : "") + '" onclick="toggleStar(event, ' + item.id + ')">' +
               (isStar ? "★" : "☆") +
             "</button>" +
           "</div>" +
           '<div class="card-thumb-box">' +
             (item.thumb
-              ? '<img class="card-thumb-img" src="' + item.thumb + '" alt="" loading="lazy" referrerpolicy="no-referrer" />'
+              ? '<img class="card-thumb-img" src="' + item.thumb + '" alt="" loading="lazy" decoding="async" referrerpolicy="no-referrer" />'
               : '<div class="thumb-placeholder">🎬</div>') +
             '<div class="play-overlay">▶</div>' +
             (item.duration ? '<span class="duration-pill">' + escapeHtml(item.duration) + "</span>" : "") +
           "</div>" +
           '<div class="card-footer">' +
-            "<span>Mã #" + item.id + "</span>" +
+            "<span>#" + item.id + "</span>" +
             "<span>" + escapeHtml(dateStr) + "</span>" +
           "</div>" +
         "</div>"
@@ -944,45 +1153,124 @@
       const isStar = starredIds.has(item.id);
       return (
         '<tr id="row-' + item.id + '" onclick="openLecture(' + item.id + ')">' +
-          '<td><div class="card-title-wrap"><span class="video-badge-icon">▶</span><span>' + escapeHtml(item.title) + "</span></div></td>" +
+          '<td><div class="card-title-wrap"><span class="video-badge-icon">▶</span><span class="card-title">' + escapeHtml(item.title) + "</span></div></td>" +
           "<td>#" + item.id + "</td>" +
           "<td>" + escapeHtml(item.duration || "--:--") + "</td>" +
-          "<td>" + escapeHtml(dateStr) + "</td>" +
+          '<td class="hide-on-mobile">' + escapeHtml(dateStr) + "</td>" +
           '<td><button class="star-btn ' + (isStar ? "starred" : "") + '" onclick="toggleStar(event, ' + item.id + ')">' + (isStar ? "★" : "☆") + "</button></td>" +
         "</tr>"
       );
     }
 
-    // Chèn mượt các bài mới tải vào cuối danh sách mà không làm nháy các thẻ đang xem
-    function appendBatchToView(newBatch) {
-      const matched = newBatch.filter(matchesCurrentFilter);
-      if (!matched.length) return;
+    function computeFilteredItems() {
+      let list = allItems.filter(matchesCurrentFilter);
+      if (activeTab === "recent") {
+        const recentMap = new Map(list.map((i) => [i.id, i]));
+        list = recentIds.map((id) => recentMap.get(id)).filter(Boolean);
+      } else {
+        list.sort((a, b) => (sortDesc ? b.id - a.id : a.id - b.id));
+      }
+      return list;
+    }
 
-      // Nếu đang sắp xếp Cũ nhất lên đầu hoặc ở tab Gần đây thì render lại
-      if (!sortDesc || activeTab === "recent") {
-        renderContent();
+    // Khởi tạo khung danh sách và chỉ vẽ 48 thẻ đầu tiên
+    function renderContent(resetScroll = false) {
+      currentFiltered = computeFilteredItems();
+      renderedCount = 0;
+
+      if (resetScroll) {
+        contentContainer.scrollTop = 0;
+      }
+
+      if (!currentFiltered.length) {
+        itemsMount.innerHTML =
+          '<div class="empty-state">' +
+          (isSyncingDone
+            ? "Không tìm thấy bài giảng nào phù hợp."
+            : "Đang tải dữ liệu bài giảng, vui lòng chờ giây lát...") +
+          "</div>";
+        scrollSentinel.textContent = "";
         return;
       }
 
-      const gridEl = document.getElementById("driveGrid");
-      const listBodyEl = document.getElementById("driveListBody");
-      const labelEl = document.getElementById("sectionLabelCount");
-
-      if (viewMode === "grid" && gridEl) {
-        gridEl.insertAdjacentHTML("beforeend", matched.map(buildCardHtml).join(""));
-        if (labelEl) {
-          labelEl.textContent = "Tệp bài giảng (" + gridEl.children.length + ")";
-        }
-      } else if (viewMode === "list" && listBodyEl) {
-        listBodyEl.insertAdjacentHTML("beforeend", matched.map(buildRowHtml).join(""));
+      if (viewMode === "grid") {
+        itemsMount.innerHTML =
+          '<div class="section-label" id="sectionLabelCount">Tệp bài giảng (' + currentFiltered.length + ")</div>" +
+          '<div class="drive-grid" id="driveGrid"></div>';
       } else {
-        renderContent();
+        itemsMount.innerHTML =
+          '<table class="drive-list">' +
+            "<thead><tr>" +
+              "<th>Tên bài giảng</th>" +
+              "<th>Mã</th>" +
+              "<th>Thời lượng</th>" +
+              '<th class="hide-on-mobile">Ngày đăng</th>' +
+              "<th>Sao</th>" +
+            "</tr></thead>" +
+            '<tbody id="driveListBody"></tbody>' +
+          "</table>";
+      }
+
+      renderNextChunk();
+    }
+
+    // Nối thêm 48 thẻ tiếp theo khi người dùng cuộn xuống gần đáy
+    function renderNextChunk() {
+      if (renderedCount >= currentFiltered.length) {
+        scrollSentinel.textContent = "";
+        return;
+      }
+
+      const slice = currentFiltered.slice(renderedCount, renderedCount + PAGE_CHUNK);
+      renderedCount += slice.length;
+
+      if (viewMode === "grid") {
+        const gridEl = document.getElementById("driveGrid");
+        if (gridEl) {
+          gridEl.insertAdjacentHTML("beforeend", slice.map(buildCardHtml).join(""));
+        }
+      } else {
+        const tbodyEl = document.getElementById("driveListBody");
+        if (tbodyEl) {
+          tbodyEl.insertAdjacentHTML("beforeend", slice.map(buildRowHtml).join(""));
+        }
+      }
+
+      scrollSentinel.textContent =
+        renderedCount < currentFiltered.length
+          ? "Đang hiển thị " + renderedCount + " / " + currentFiltered.length + " bài..."
+          : "Đã hiển thị toàn bộ " + currentFiltered.length + " bài giảng";
+    }
+
+    // Khi có đợt bài mới tải ngầm về, chỉ cập nhật nhẹ không làm giật cuộn trang trên iPhone
+    function onNewBatchLoaded() {
+      currentFiltered = computeFilteredItems();
+      const labelEl = document.getElementById("sectionLabelCount");
+      if (labelEl) {
+        labelEl.textContent = "Tệp bài giảng (" + currentFiltered.length + ")";
+      }
+      if (renderedCount === 0 && currentFiltered.length > 0) {
+        renderContent(false);
+      } else if (renderedCount < PAGE_CHUNK && currentFiltered.length > renderedCount) {
+        renderNextChunk();
+      } else if (renderedCount < currentFiltered.length) {
+        scrollSentinel.textContent =
+          "Đang hiển thị " + renderedCount + " / " + currentFiltered.length + " bài...";
       }
     }
 
-    // Tự động tải toàn bộ các bài giảng từ mới nhất đến bài đầu tiên
+    // Quan sát cuộn trang tự động nạp tiếp mượt mà
+    const observer = new IntersectionObserver(
+      (entries) => {
+        if (entries[0].isIntersecting && renderedCount < currentFiltered.length) {
+          renderNextChunk();
+        }
+      },
+      { root: contentContainer, rootMargin: "500px" }
+    );
+    observer.observe(scrollSentinel);
+
     async function autoLoadAllLectures() {
-      // Khôi phục bộ nhớ đệm nếu có để hiện ngay lập tức
       try {
         const cached = JSON.parse(sessionStorage.getItem(CACHE_KEY) || "null");
         if (cached && Array.isArray(cached.items) && cached.items.length > 0) {
@@ -991,17 +1279,15 @@
           existingIds = new Set(allItems.map((i) => i.id));
           isSyncingDone = Boolean(cached.done);
           updateSidebarCounts();
-          renderContent();
+          renderContent(false);
         }
       } catch (_) {}
 
       let cursor = 0;
-      // Nếu đã có cache một phần, tiếp tục tải từ ID nhỏ nhất đã có
       if (allItems.length > 0 && !isSyncingDone) {
         cursor = Math.min(...allItems.map((i) => i.id));
       }
 
-      // Kiểm tra bài mới nhất ở trang đầu tiên
       try {
         const firstRes = await fetch("/api/lectures");
         const firstData = await firstRes.json();
@@ -1015,7 +1301,7 @@
             }
             allItems.sort((a, b) => b.id - a.id);
             updateSidebarCounts();
-            renderContent();
+            renderContent(false);
           }
           if (!cursor) {
             cursor = firstData.next;
@@ -1023,7 +1309,7 @@
         }
       } catch (err) {
         if (!allItems.length) {
-          contentContainer.innerHTML =
+          itemsMount.innerHTML =
             '<div class="empty-state" style="color:#d93025">' +
             "<h3>Không thể tải danh sách bài giảng</h3>" +
             '<p style="margin-top:8px">' + escapeHtml(err.message) + "</p></div>";
@@ -1031,52 +1317,42 @@
         }
       }
 
-      // Kiểm tra nếu URL có #ID ngay từ đợt đầu
       checkUrlHashToOpen();
 
-      // Vòng lặp tự động tải toàn bộ các trang cũ hơn cho đến khi hết sạch kênh
+      // Tải ngầm có nhịp nghỉ 120ms để cảm ứng iPhone luôn mượt
       while (cursor && !isSyncingDone) {
         try {
           const res = await fetch("/api/lectures?before=" + cursor);
           const data = await res.json();
           if (!res.ok || data.error) break;
 
-          const newBatch = [];
+          let added = 0;
           for (const item of data.items || []) {
             if (!existingIds.has(item.id)) {
               existingIds.add(item.id);
               allItems.push(item);
-              newBatch.push(item);
+              added++;
             }
           }
 
           cursor = data.next;
-          if (!cursor) {
-            isSyncingDone = true;
-          }
+          if (!cursor) isSyncingDone = true;
 
           updateSidebarCounts();
-          if (newBatch.length > 0) {
-            appendBatchToView(newBatch);
-          }
-
-          // Lưu cache tạm thời
-          try {
-            sessionStorage.setItem(
-              CACHE_KEY,
-              JSON.stringify({ channel: channelName, items: allItems, done: isSyncingDone })
-            );
-          } catch (_) {}
-
+          if (added > 0) onNewBatchLoaded();
           checkUrlHashToOpen();
+
+          await new Promise((r) => setTimeout(r, 120));
         } catch (_) {
-          // Nếu mạng chập chờn thì nghỉ 1.5s rồi tải tiếp
           await new Promise((r) => setTimeout(r, 1500));
         }
       }
 
       isSyncingDone = true;
       updateSidebarCounts();
+      onNewBatchLoaded();
+
+      // Chỉ ghi vào sessionStorage 1 lần duy nhất khi hoàn tất để không gây đơ iPhone
       try {
         sessionStorage.setItem(
           CACHE_KEY,
@@ -1090,55 +1366,6 @@
       if (hashId && !currentId) {
         const target = allItems.find((i) => i.id === hashId);
         if (target) openLecture(target.id);
-      }
-    }
-
-    function getFilteredItems() {
-      let list = allItems.filter(matchesCurrentFilter);
-
-      if (activeTab === "recent") {
-        const recentMap = new Map(list.map((i) => [i.id, i]));
-        list = recentIds.map((id) => recentMap.get(id)).filter(Boolean);
-      } else {
-        list.sort((a, b) => (sortDesc ? b.id - a.id : a.id - b.id));
-      }
-
-      return list;
-    }
-
-    function renderContent() {
-      const items = getFilteredItems();
-
-      if (!items.length) {
-        contentContainer.innerHTML =
-          '<div class="empty-state">' +
-          (isSyncingDone
-            ? "Không tìm thấy bài giảng nào phù hợp."
-            : "Đang tải dữ liệu bài giảng, vui lòng chờ giây lát...") +
-          "</div>";
-        return;
-      }
-
-      if (viewMode === "grid") {
-        contentContainer.innerHTML =
-          '<div class="section-label" id="sectionLabelCount">Tệp bài giảng (' + items.length + ")</div>" +
-          '<div class="drive-grid" id="driveGrid">' +
-          items.map(buildCardHtml).join("") +
-          "</div>";
-      } else {
-        contentContainer.innerHTML =
-          '<table class="drive-list">' +
-            "<thead><tr>" +
-              "<th>Tên bài giảng</th>" +
-              "<th>Mã bài</th>" +
-              "<th>Thời lượng</th>" +
-              "<th>Ngày đăng</th>" +
-              "<th>Dấu sao</th>" +
-            "</tr></thead>" +
-            '<tbody id="driveListBody">' +
-              items.map(buildRowHtml).join("") +
-            "</tbody>" +
-          "</table>";
       }
     }
 
@@ -1168,7 +1395,7 @@
       streamStatus.style.color = "#a8c7fa";
       streamStatus.textContent = item.directUrl
         ? "Đang phát trực tiếp qua Telegram CDN"
-        : "Đang kết nối luồng MTProto Stream (video dung lượng lớn, chờ 2-4 giây)...";
+        : "Đang kết nối luồng MTProto Stream (chờ 2-4 giây)...";
 
       playerModal.classList.add("open");
       videoPlayer.poster = item.thumb || "";
@@ -1177,7 +1404,7 @@
 
       videoPlayer.onloadeddata = () => {
         streamStatus.style.color = "#81c995";
-        streamStatus.textContent = "Đang phát bài giảng #" + item.id + " (" + (item.duration || "") + ")";
+        streamStatus.textContent = "Đang phát #" + item.id + " (" + (item.duration || "") + ")";
       };
 
       videoPlayer.onerror = async () => {
@@ -1219,10 +1446,9 @@
     }
 
     function playAdjacent(step) {
-      const list = getFilteredItems();
-      const idx = list.findIndex((i) => i.id === currentId);
+      const idx = currentFiltered.findIndex((i) => i.id === currentId);
       if (idx === -1) return;
-      const nextItem = list[idx + step];
+      const nextItem = currentFiltered[idx + step];
       if (nextItem) openLecture(nextItem.id);
     }
 
@@ -1234,7 +1460,13 @@
         starredIds.add(id);
       }
       saveStorage();
-      renderContent();
+      const cardBtn = document.querySelector("#card-" + id + " .star-btn");
+      if (cardBtn) {
+        const isStar = starredIds.has(id);
+        cardBtn.classList.toggle("starred", isStar);
+        cardBtn.textContent = isStar ? "★" : "☆";
+      }
+      if (activeTab === "starred") renderContent(false);
       if (currentId === id) updateModalStarButton();
     }
 
@@ -1246,20 +1478,20 @@
         starredIds.add(currentId);
       }
       saveStorage();
-      renderContent();
       updateModalStarButton();
+      renderContent(false);
     }
 
     function updateModalStarButton() {
       const btn = document.getElementById("modalStarBtn");
       const isStar = starredIds.has(currentId);
-      btn.textContent = isStar ? "★ Đã gắn sao" : "☆ Gắn dấu sao";
+      btn.textContent = isStar ? "★ Đã sao" : "☆ Sao";
       btn.style.color = isStar ? "#fbbc04" : "#ffffff";
     }
 
     function switchTab(tab) {
       activeTab = tab;
-      document.querySelectorAll(".nav-item").forEach((el) => {
+      document.querySelectorAll(".nav-item, .mob-nav-btn").forEach((el) => {
         el.classList.toggle("active", el.dataset.tab === tab);
       });
       const titles = {
@@ -1268,7 +1500,7 @@
         starred: "Có gắn dấu sao",
       };
       document.getElementById("workspaceTitle").textContent = titles[tab] || "Drive của tôi";
-      renderContent();
+      renderContent(true);
     }
 
     function setDurationFilter(filter) {
@@ -1276,14 +1508,13 @@
       document.querySelectorAll(".chip[data-duration]").forEach((el) => {
         el.classList.toggle("active", el.dataset.duration === filter);
       });
-      renderContent();
+      renderContent(true);
     }
 
     function toggleSortOrder() {
       sortDesc = !sortDesc;
-      document.getElementById("sortChip").textContent =
-        "Sắp xếp: " + (sortDesc ? "Mới nhất ↓" : "Cũ nhất ↑");
-      renderContent();
+      document.getElementById("sortChip").textContent = sortDesc ? "Mới nhất ↓" : "Cũ nhất ↑";
+      renderContent(true);
     }
 
     function setViewMode(mode) {
@@ -1293,7 +1524,7 @@
       document.getElementById("listViewBtn").classList.toggle("active", !isGrid);
       document.getElementById("gridViewBtn").textContent = isGrid ? "✓ ⊞" : "⊞";
       document.getElementById("listViewBtn").textContent = !isGrid ? "✓ ☰" : "☰";
-      renderContent();
+      renderContent(false);
     }
 
     function escapeHtml(s) {
@@ -1304,15 +1535,18 @@
         .replace(/"/g, "&quot;");
     }
 
+    // Debounce 150ms giúp gõ phím trên iPhone không bị khựng
+    let searchTimer = null;
     searchInput.addEventListener("input", () => {
       clearSearchBtn.style.display = searchInput.value ? "block" : "none";
-      renderContent();
+      clearTimeout(searchTimer);
+      searchTimer = setTimeout(() => renderContent(true), 150);
     });
 
     clearSearchBtn.addEventListener("click", () => {
       searchInput.value = "";
       clearSearchBtn.style.display = "none";
-      renderContent();
+      renderContent(true);
     });
 
     window.addEventListener("keydown", (e) => {
